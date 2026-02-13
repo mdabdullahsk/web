@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudioPro Elite V7 - Final Scale Edition</title>
+    <title>StudioPro Elite V10 - Master Centered Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Roboto:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
@@ -19,16 +19,15 @@
             font-family: 'Poppins', sans-serif; 
             background: var(--bg-dark); 
             color: #f8fafc; 
-            margin: 0; 
-            height: 100vh;
+            margin: 0; height: 100vh;
             overflow: hidden;
         }
 
-        /* --- UI Panels Optimized for All Screens --- */
+        /* --- UI Layers (Sidebars) --- */
         #toolkit-sidebar { 
-            width: 260px; position: fixed; left: -280px; top: 64px; bottom: 0; 
+            width: 260px; position: fixed; left: -260px; top: 64px; bottom: 0; 
             z-index: 2000000; background: var(--panel-bg); border-right: 1px solid rgba(255,255,255,0.1);
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex; flex-direction: column;
             box-shadow: 10px 0 30px rgba(0,0,0,0.5);
         }
@@ -36,33 +35,46 @@
 
         #properties {
             width: 280px; background: var(--panel-bg); border-left: 1px solid rgba(255,255,255,0.1);
-            position: fixed; right: 0; top: 0; bottom: 0; z-index: 2000000; 
-            display: none; flex-direction: column; box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            position: fixed; right: -280px; top: 0; bottom: 0; z-index: 2000000; 
+            display: flex; flex-direction: column; box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        #properties.open { right: 0; }
 
         .sidebar-content { overflow-y: auto; flex: 1; padding: 15px; }
         .sidebar-content::-webkit-scrollbar { width: 4px; }
         .sidebar-content::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
 
-        /* --- Workspace --- */
+        /* --- Workspace Centering Engine --- */
         #workspace {
             height: calc(100vh - 64px); 
             overflow: auto; 
-            padding: 60px;
             background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1.5px, transparent 1.5px);
             background-size: 25px 25px;
-            display: flex; justify-content: center; align-items: flex-start;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            transition: padding 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 50px;
+            position: relative;
+            scrollbar-width: thin;
         }
+
+        /* যখন মেনু খুলবে, ওয়ার্কস্পেস প্যাডিং নিয়ে ফ্রেমকে মাঝখানে ঠেলে দেবে */
+        body.sidebar-open #workspace { padding-left: 260px; }
+        body.props-open #workspace { padding-right: 280px; }
 
         #canvas {
             background: #ffffff;
             position: relative; 
-            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
-            overflow: hidden;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+            transition: transform 0.3s, width 0.3s, height 0.3s;
+            overflow: hidden !important; /* স্ক্রিনশটের ওই স্ক্রলবারটি রিমুভ করার জন্য */
             flex-shrink: 0;
+            margin: auto; /* ক্যানভাস সবসময় তার নির্দিষ্ট এরিয়ার মাঝখানে থাকবে */
         }
 
-        /* --- Elements & Controls (Z-Index Fix) --- */
+        /* --- Builder Elements & Controls --- */
         .builder-element { position: absolute; cursor: grab; box-sizing: border-box; border: 2px solid transparent; }
         .builder-element.selected { border-color: var(--accent); z-index: 1000000 !important; }
 
@@ -93,26 +105,25 @@
             overflow: hidden; text-decoration: none; pointer-events: none;
         }
 
-        /* Tools */
+        /* Toolkit Items */
         .tool-item {
             background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
             border-radius: 12px; padding: 12px; margin-bottom: 10px;
             display: flex; flex-direction: column; align-items: center; gap: 6px;
             cursor: grab; transition: 0.2s;
         }
-        .tool-item:hover { background: var(--accent); color: white; }
+        .tool-item:hover { background: var(--accent); color: white; transform: translateY(-2px); }
 
         .prop-input, .prop-select {
             width: 100%; background: #020617; border: 1px solid #334155;
             color: white; padding: 8px; border-radius: 6px; font-size: 12px; margin-top: 4px;
         }
 
-        /* --- Modals --- */
         #setup-modal, #page-settings-modal { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.98); z-index: 3000000; display: flex; align-items: center; justify-content: center; }
         #page-settings-modal { display: none; }
     </style>
 </head>
-<body>
+<body class="flex flex-col">
 
     <!-- Startup Selection -->
     <div id="setup-modal">
@@ -139,47 +150,46 @@
         </div>
     </div>
 
-    <!-- Page Settings Modal -->
+    <!-- Page Settings -->
     <div id="page-settings-modal">
-        <div class="bg-slate-900 p-8 rounded-3xl border border-white/10 w-96 text-center shadow-2xl">
-            <h2 class="text-xl font-bold mb-6 text-green-500">Global Page Settings</h2>
+        <div class="bg-slate-900 p-8 rounded-3xl border border-white/10 w-96 text-center">
+            <h2 class="text-xl font-bold mb-6 text-green-500">Project Config</h2>
             <div class="space-y-4">
                 <div class="text-left">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase">Screen Scaling Mode</label>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Screen Scaling</label>
                     <select id="setting-scale-mode" class="prop-select mt-2">
-                        <option value="fixed">Fixed (Classic Centered)</option>
-                        <option value="scale">Auto-Scale (Fill Big Screens/TV)</option>
+                        <option value="fixed">Fixed (Centered)</option>
+                        <option value="scale">Auto-Scale (TV/Large Screen)</option>
                     </select>
                 </div>
                 <div class="text-left">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase">Page Background</label>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Global Background</label>
                     <input type="color" id="setting-page-bg" class="prop-input h-10 p-1" value="#020617">
                 </div>
             </div>
-            <p class="text-[10px] text-slate-500 mt-6 leading-relaxed italic">"Auto-Scale" সিলেক্ট করলে আপনার ডিজাইনটি বড় টিভিতে অটোমেটিক ফিট হয়ে যাবে।</p>
-            <button onclick="togglePageSettings()" class="w-full mt-8 bg-green-600 py-3 rounded-xl font-bold hover:bg-green-500 transition">Save & Close</button>
+            <button onclick="togglePageSettings()" class="w-full mt-8 bg-green-600 py-3 rounded-xl font-bold">Apply Changes</button>
         </div>
     </div>
 
     <!-- Header Navigation -->
-    <nav class="h-16 bg-slate-950 border-b border-white/5 flex justify-between items-center px-6 z-[10001]">
+    <nav class="h-16 bg-slate-950 border-b border-white/5 flex justify-between items-center px-6 z-[10001] fixed w-full">
         <div class="flex items-center gap-4">
             <button onclick="toggleToolkit()" class="p-2 bg-green-500/10 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition">
                 <i data-lucide="layout-grid" class="w-6 h-6"></i>
             </button>
-            <span class="font-bold text-lg tracking-tighter italic">STUDIO<span class="text-green-500">PRO</span></span>
+            <span class="font-bold text-lg tracking-tighter italic uppercase">Studio<span class="text-green-500">Pro</span></span>
         </div>
         <div class="flex items-center gap-3">
             <button onclick="togglePageSettings()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-full text-xs font-bold hover:bg-slate-700 transition flex items-center gap-2">
                 <i data-lucide="settings" class="w-4 h-4"></i> Page Settings
             </button>
-            <button onclick="exportCode()" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-lg shadow-green-600/20 transition">
+            <button onclick="exportCode()" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2.5 rounded-full text-xs font-bold flex items-center gap-2 shadow-lg shadow-green-600/20">
                 <i data-lucide="send" class="w-4 h-4"></i> Export Design
             </button>
         </div>
     </nav>
 
-    <div class="flex flex-1 overflow-hidden">
+    <div class="flex flex-1 overflow-hidden h-screen pt-16">
         
         <!-- Toolkit Sidebar -->
         <aside id="toolkit-sidebar">
@@ -198,7 +208,7 @@
             </div>
         </aside>
 
-        <!-- Main Workspace -->
+        <!-- Workspace -->
         <main id="workspace" onclick="deselectAll(event)">
             <div id="canvas" ondragover="allowDrop(event)" ondrop="dropElement(event)"></div>
         </main>
@@ -206,28 +216,20 @@
         <!-- Properties Panel -->
         <aside id="properties">
             <div class="p-4 border-b border-white/5 flex justify-between items-center bg-slate-950">
-                <span class="text-xs font-bold uppercase text-slate-400">Edit Element</span>
+                <span class="text-xs font-bold uppercase text-slate-400">Edit Settings</span>
                 <button onclick="closePanel()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
             <div class="p-6 overflow-y-auto flex-1 space-y-6">
                 <div>
-                    <label class="text-[10px] font-bold text-slate-500 uppercase">Content / Value</label>
+                    <label id="content-label" class="text-[10px] font-bold text-slate-500 uppercase">Content / Image URL</label>
                     <textarea id="prop-content" rows="2" class="prop-input"></textarea>
                 </div>
                 <div id="btn-settings" class="hidden p-3 bg-green-500/5 rounded-xl border border-green-500/10 space-y-3">
                     <p class="text-[10px] font-bold text-green-500 uppercase">Button Link</p>
-                    <input type="text" id="prop-href" class="prop-input" placeholder="URL (https://...)">
+                    <input type="text" id="prop-href" class="prop-input" placeholder="https://...">
                     <select id="prop-target" class="prop-select">
-                        <option value="_self">Open in Same Tab</option>
-                        <option value="_blank">Open in New Tab</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-[10px] font-bold text-slate-500 uppercase">Font Family</label>
-                    <select id="prop-font" class="prop-select">
-                        <option value="'Poppins', sans-serif">Poppins</option>
-                        <option value="'Roboto', sans-serif">Roboto</option>
-                        <option value="'Montserrat', sans-serif">Montserrat</option>
+                        <option value="_self">Same Tab</option>
+                        <option value="_blank">New Tab</option>
                     </select>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
@@ -239,9 +241,17 @@
                     <div><label class="text-[10px] font-bold text-slate-500 uppercase">Background</label><input type="color" id="prop-bg" class="prop-input h-10 p-1"></div>
                 </div>
                 <div><label class="text-[10px] font-bold text-slate-500 uppercase">Border Radius</label><input type="number" id="prop-radius" class="prop-input"></div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Font</label>
+                    <select id="prop-font" class="prop-select">
+                        <option value="'Poppins', sans-serif">Poppins</option>
+                        <option value="'Roboto', sans-serif">Roboto</option>
+                        <option value="'Montserrat', sans-serif">Montserrat</option>
+                    </select>
+                </div>
                 <div class="pt-4 border-t border-white/5 space-y-2">
-                    <button onclick="changeZ(10)" class="w-full bg-slate-800 py-2 rounded-lg text-xs font-bold">Bring Forward</button>
-                    <button onclick="changeZ(-10)" class="w-full bg-slate-800 py-2 rounded-lg text-xs font-bold">Send Backward</button>
+                    <button onclick="changeZ(10)" class="w-full bg-slate-800 py-2 rounded-lg text-xs font-bold">Bring Front</button>
+                    <button onclick="changeZ(-10)" class="w-full bg-slate-800 py-2 rounded-lg text-xs font-bold">Send Back</button>
                 </div>
             </div>
         </aside>
@@ -256,15 +266,28 @@
         let selectedElement = null;
         let zIndexCounter = 1000;
 
-        function toggleToolkit() { toolkitSidebar.classList.toggle('open'); }
-        function togglePageSettings() { settingsModal.style.display = (settingsModal.style.display === 'flex') ? 'none' : 'flex'; }
-        function closePanel() { propertiesPanel.style.display = 'none'; }
+        // Toggle Toolkit and adjust workspace centering
+        function toggleToolkit() { 
+            toolkitSidebar.classList.toggle('open');
+            document.body.classList.toggle('sidebar-open');
+        }
+
+        function togglePageSettings() { 
+            settingsModal.style.display = (settingsModal.style.display === 'flex') ? 'none' : 'flex'; 
+        }
+
+        // Close Properties and adjust workspace centering
+        function closePanel() { 
+            propertiesPanel.classList.remove('open');
+            document.body.classList.remove('props-open');
+        }
 
         function initProject(type) {
-            if(type === 'mobile') { canvas.style.width = '375px'; canvas.style.height = '667px'; }
-            else if(type === 'tablet') { canvas.style.width = '700px'; canvas.style.height = '900px'; }
+            canvas.style.borderRadius = '0px';
+            if(type === 'mobile') { canvas.style.width = '375px'; canvas.style.height = '667px'; canvas.style.borderRadius = '20px'; }
+            else if(type === 'tablet') { canvas.style.width = '700px'; canvas.style.height = '900px'; canvas.style.borderRadius = '15px'; }
             else if(type === 'desktop') { canvas.style.width = '1200px'; canvas.style.height = '750px'; }
-            else { canvas.style.width = '900px'; canvas.style.height = '600px'; }
+            else { canvas.style.width = '1000px'; canvas.style.height = '600px'; }
             document.getElementById('setup-modal').style.display = 'none';
         }
 
@@ -286,7 +309,7 @@
             let inner = '';
             let sw=200, sh=50;
 
-            if(type === 'text') inner = `<div class="element-content text-black text-xl font-bold">Double Click to Edit</div>`;
+            if(type === 'text') inner = `<div class="element-content text-black text-xl font-bold">Edit Text</div>`;
             else if(type === 'button') { inner = `<a href="#" class="element-content bg-green-600 text-white px-6 rounded-lg font-bold">New Button</a>`; sw=150; sh=45; }
             else if(type === 'image') { inner = `<img src="https://via.placeholder.com/300" class="element-content object-cover rounded-lg">`; sw=250; sh=150; }
             else if(type === 'box') { inner = `<div class="element-content border border-slate-300 rounded-md"></div>`; sw=150; sh=150; }
@@ -328,21 +351,22 @@
             if(e.target.id === 'workspace' || e.target.id === 'canvas') {
                 if(selectedElement) selectedElement.classList.remove('selected');
                 selectedElement = null;
-                propertiesPanel.style.display = 'none';
+                closePanel();
             }
         }
 
         function openSidebar(e, el) {
             e.stopPropagation();
             selectElement(el);
-            propertiesPanel.style.display = 'flex';
+            propertiesPanel.classList.add('open');
+            document.body.classList.add('props-open');
             syncInputs();
         }
 
         function deleteEl(e, el) {
             e.stopPropagation();
             el.remove();
-            propertiesPanel.style.display = 'none';
+            closePanel();
         }
 
         function syncInputs() {
@@ -352,9 +376,13 @@
             document.getElementById('prop-w').value = parseInt(selectedElement.style.width);
             document.getElementById('prop-h').value = parseInt(selectedElement.style.height);
             document.getElementById('btn-settings').style.display = (type === 'button') ? 'block' : 'none';
-            if(type === 'button') {
-                document.getElementById('prop-href').value = content.getAttribute('href') || '#';
-                document.getElementById('prop-target').value = content.getAttribute('target') || '_self';
+            
+            if(type === 'image') {
+                document.getElementById('prop-content').value = content.src;
+                document.getElementById('content-label').innerText = "IMAGE URL";
+            } else {
+                document.getElementById('prop-content').value = content.innerText || content.placeholder || "";
+                document.getElementById('content-label').innerText = "CONTENT / TEXT";
             }
         }
 
@@ -426,16 +454,14 @@
                 if(content) content.style.pointerEvents = 'auto';
             });
 
-            const w = canvas.offsetWidth;
             const mode = document.getElementById('setting-scale-mode').value;
             const pageBg = document.getElementById('setting-page-bg').value;
-            
             let scaleScript = "";
             if(mode === 'scale') {
                 scaleScript = `
                 <script>
                     function scaleCanvas() {
-                        const baseW = ${w};
+                        const baseW = ${canvas.offsetWidth};
                         const s = window.innerWidth / baseW;
                         if(window.innerWidth > 600) {
                             document.querySelector('.exported-canvas').style.transform = 'scale(' + s + ')';
@@ -451,18 +477,14 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Exported Design</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"><\/script>
     <style>
         body { margin: 0; background: ${pageBg}; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; }
         .exported-canvas { 
-            position: relative; 
-            width: ${w}px; 
-            height: ${canvas.offsetHeight}px; 
+            position: relative; width: ${canvas.offsetWidth}px; height: ${canvas.offsetHeight}px; 
             background: ${window.getComputedStyle(canvas).backgroundColor}; 
-            overflow: hidden; flex-shrink: 0;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            overflow: hidden; flex-shrink: 0; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
         .builder-element { position: absolute; display: flex; }
         .element-content { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-decoration: none; }
