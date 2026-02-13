@@ -4,140 +4,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudioPro Elite V12 - SPA Export & Zoom</title>
+    <title>StudioPro Elite - Final Corrected</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Roboto:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Roboto:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --accent: #22c55e;
-            --bg-dark: #020617;
-            --panel-bg: #0f172a;
+            --accent: #3b82f6; /* Illustrator Blue */
+            --bg-dark: #1e1e1e; 
+            --panel-bg: #262626;
+            --border: #3f3f46;
+            --guide-color: #ff00ff; /* Pink Smart Guide */
         }
 
         body { 
             font-family: 'Poppins', sans-serif; 
             background: var(--bg-dark); 
-            color: #f8fafc; 
+            color: #e2e8f0; 
             margin: 0; height: 100vh;
             overflow: hidden;
+            user-select: none;
         }
 
-        /* --- UI Layers (Sidebars) --- */
+        /* --- Toolbar (Left) --- */
         #toolkit-sidebar { 
-            width: 260px; position: fixed; left: -260px; top: 64px; bottom: 0; 
-            z-index: 2000; background: var(--panel-bg); border-right: 1px solid rgba(255,255,255,0.1);
-            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; flex-direction: column;
-            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+            width: 50px; position: fixed; left: 0; top: 50px; bottom: 0; 
+            z-index: 2000; background: var(--panel-bg); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; align-items: center; padding-top: 15px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
         }
-        #toolkit-sidebar.open { left: 0; }
 
+        .tool-item {
+            width: 36px; height: 36px; margin-bottom: 10px; border-radius: 6px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: grab; transition: 0.2s; color: #a1a1aa; position: relative;
+        }
+        .tool-item:hover { background: #3f3f46; color: white; }
+        .tool-item:active { cursor: grabbing; }
+        
+        /* Tooltip */
+        .tool-item::after {
+            content: attr(data-label); position: absolute; left: 45px; 
+            background: black; color: white; padding: 4px 8px; font-size: 10px; 
+            border-radius: 4px; opacity: 0; pointer-events: none; transition: 0.2s; 
+            white-space: nowrap; z-index: 3000;
+        }
+        .tool-item:hover::after { opacity: 1; }
+
+        /* --- Properties Panel (Right) --- */
         #properties {
-            width: 280px; background: var(--panel-bg); border-left: 1px solid rgba(255,255,255,0.1);
-            position: fixed; right: -280px; top: 0; bottom: 0; z-index: 2000; 
+            width: 280px; background: var(--panel-bg); border-left: 1px solid var(--border);
+            position: fixed; right: -280px; top: 50px; bottom: 0; z-index: 2000; 
             display: flex; flex-direction: column; box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         #properties.open { right: 0; }
-
-        .sidebar-content { overflow-y: auto; flex: 1; padding: 15px; }
-        .sidebar-content::-webkit-scrollbar { width: 4px; }
-        .sidebar-content::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
-
-        /* --- Workspace Centering Engine (UPDATED for Zoom) --- */
-        #workspace {
-            position: absolute;
-            top: 64px; bottom: 0; left: 0; right: 0;
-            overflow: hidden; /* Scroll handled by content wrapper if needed, but zoom makes it easier */
-            background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1.5px, transparent 1.5px);
-            background-size: 25px 25px;
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            transition: left 0.4s, right 0.4s;
-            padding: 20px;
+        
+        .prop-section { padding: 15px; border-bottom: 1px solid var(--border); }
+        .prop-title { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        
+        .prop-input, .prop-select {
+            width: 100%; background: #18181b; border: 1px solid #3f3f46;
+            color: white; padding: 6px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 6px;
         }
+        .prop-input:focus { border-color: var(--accent); outline: none; }
+        
+        .prop-row { display: flex; gap: 8px; }
 
-        /* Responsive Layout Adjustments */
-        body.sidebar-open #workspace { left: 260px; }
-        body.props-open #workspace { right: 280px; }
+        /* --- Workspace --- */
+        #workspace {
+            position: absolute; top: 50px; bottom: 0; left: 50px; right: 0;
+            overflow: hidden; background-color: #121212; 
+            background-image: radial-gradient(#333 1px, transparent 1px);
+            background-size: 20px 20px;
+            cursor: default;
+        }
+        #workspace.panning, body.is-panning { cursor: grab !important; }
+        body.is-panning:active { cursor: grabbing !important; }
 
-        /* Zoom Container to handle scaling smoothly */
         #zoom-wrapper {
-            transition: transform 0.2s ease-out;
+            width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
             transform-origin: center center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.8);
         }
 
         #canvas {
-            background: #ffffff;
-            position: relative; 
-            transition: width 0.3s, height 0.3s;
-            flex-shrink: 0; 
+            background: #ffffff; position: relative; 
+            box-shadow: 0 0 100px rgba(0,0,0,0.8);
         }
 
-        /* --- Builder Elements & Controls --- */
-        .builder-element { position: absolute; cursor: grab; box-sizing: border-box; border: 2px solid transparent; }
-        .builder-element.selected { border-color: var(--accent); z-index: 1000 !important; }
+        /* --- Smart Guides --- */
+        #guide-layer {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none; z-index: 9999; overflow: hidden;
+        }
+        .guide-line { position: absolute; background-color: var(--guide-color); pointer-events: none; }
+        .guide-v { width: 1px; height: 100%; top: 0; border-left: 1px dashed var(--guide-color); background: transparent; }
+        .guide-h { height: 1px; width: 100%; left: 0; border-top: 1px dashed var(--guide-color); background: transparent; }
 
+        /* --- Elements --- */
+        .builder-element { position: absolute; cursor: move; box-sizing: border-box; border: 1px solid transparent; }
+        .builder-element.selected { border: 1px solid var(--accent); z-index: 1000 !important; }
+
+        /* Floating Element Controls */
         .element-controls {
-            position: absolute; top: -50px; left: 0;
-            background: #1e293b; padding: 4px; border-radius: 8px; display: none; gap: 4px;
-            border: 1px solid #334155; box-shadow: 0 10px 15px rgba(0,0,0,0.3);
-            pointer-events: auto; z-index: 1001;
-            transform: scale(1) !important; /* Keep controls same size regardless of canvas zoom */
+            position: absolute; top: -45px; left: 50%; transform: translateX(-50%);
+            background: #18181b; padding: 4px; border-radius: 8px; display: none; gap: 4px;
+            border: 1px solid #3f3f46; pointer-events: auto; z-index: 1001;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
         .selected .element-controls { display: flex; }
 
         .control-btn {
             width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
-            border-radius: 6px; cursor: pointer; transition: 0.2s;
+            border-radius: 6px; cursor: pointer; transition: 0.2s; color: white;
         }
-        .btn-edit { background: #3b82f6; color: white; }
-        .btn-copy { background: #6366f1; color: white; }
-        .btn-del { background: #ef4444; color: white; }
+        .btn-copy { background: #6366f1; }
+        .btn-edit { background: var(--accent); } 
+        .btn-del { background: #ef4444; }
+        .control-btn:hover { filter: brightness(1.2); transform: translateY(-2px); }
 
         .resizer {
-            width: 12px; height: 12px; background: var(--accent); border: 2px solid white;
-            position: absolute; bottom: -6px; right: -6px; border-radius: 50%; cursor: se-resize; display: none;
+            width: 10px; height: 10px; background: white; border: 1px solid var(--accent);
+            position: absolute; bottom: -5px; right: -5px; cursor: se-resize; display: none;
+            z-index: 1002;
         }
         .selected .resizer { display: block; }
 
         .element-content { 
             width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-            overflow: hidden; text-decoration: none; pointer-events: none;
+            overflow: hidden; pointer-events: none;
         }
 
-        /* Toolkit Items */
-        .tool-item {
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 12px; padding: 12px; margin-bottom: 10px;
-            display: flex; flex-direction: column; align-items: center; gap: 6px;
-            cursor: grab; transition: 0.2s;
-        }
-        .tool-item:hover { background: var(--accent); color: white; transform: translateY(-2px); }
-
-        .prop-input, .prop-select {
-            width: 100%; background: #020617; border: 1px solid #334155;
-            color: white; padding: 8px; border-radius: 6px; font-size: 12px; margin-top: 4px;
-        }
-
-        /* Zoom Controls */
-        #zoom-controls {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255,255,255,0.1);
-            padding: 8px 16px; border-radius: 50px; display: flex; align-items: center; gap: 12px;
-            z-index: 2500; backdrop-filter: blur(5px);
+        #zoom-info {
+            position: fixed; bottom: 15px; left: 65px;
+            background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 4px;
+            font-size: 11px; color: #aaa; pointer-events: none;
+            border: 1px solid #333;
         }
 
         /* Modals */
         #setup-modal, #page-settings-modal, #page-manager-modal { 
-            position: fixed; inset: 0; background: rgba(2, 6, 23, 0.98); z-index: 3000; display: none; align-items: center; justify-content: center; 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; display: none; align-items: center; justify-content: center; 
         }
         #setup-modal { display: flex; }
     </style>
@@ -146,165 +155,179 @@
 
     <!-- Startup Selection -->
     <div id="setup-modal">
-        <div class="max-w-2xl w-full p-6 text-center">
-            <h1 class="text-3xl font-black mb-8 italic uppercase tracking-tighter">Studio<span class="text-green-500">Pro</span></h1>
-            <p class="text-slate-400 mb-6">Select your initial canvas size</p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div onclick="initProject('mobile')" class="p-6 bg-slate-900 rounded-3xl cursor-pointer hover:border-green-500 border-2 border-transparent transition group">
-                    <i data-lucide="smartphone" class="mx-auto mb-2 w-8 h-8 text-slate-500 group-hover:text-green-500"></i>
-                    <span class="text-xs font-bold uppercase">Mobile</span>
+        <div class="max-w-3xl w-full p-8 text-center">
+            <h1 class="text-4xl font-black mb-10 italic uppercase tracking-tighter text-white">Studio<span class="text-blue-500">Pro</span></h1>
+            <p class="text-slate-400 mb-8">Select Canvas Size</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div onclick="initProject('mobile')" class="p-6 bg-[#262626] rounded-xl cursor-pointer hover:border-blue-500 border-2 border-transparent transition group">
+                    <i data-lucide="smartphone" class="mx-auto mb-3 w-8 h-8 text-slate-500 group-hover:text-blue-500"></i>
+                    <span class="text-xs font-bold uppercase text-white">Mobile</span>
                 </div>
-                <div onclick="initProject('tablet')" class="p-6 bg-slate-900 rounded-3xl cursor-pointer hover:border-green-500 border-2 border-transparent transition group">
-                    <i data-lucide="tablet" class="mx-auto mb-2 w-8 h-8 text-slate-500 group-hover:text-green-500"></i>
-                    <span class="text-xs font-bold uppercase">Tablet</span>
+                <div onclick="initProject('tablet')" class="p-6 bg-[#262626] rounded-xl cursor-pointer hover:border-blue-500 border-2 border-transparent transition group">
+                    <i data-lucide="tablet" class="mx-auto mb-3 w-8 h-8 text-slate-500 group-hover:text-blue-500"></i>
+                    <span class="text-xs font-bold uppercase text-white">Tablet</span>
                 </div>
-                <div onclick="initProject('desktop')" class="p-6 bg-slate-900 rounded-3xl cursor-pointer hover:border-green-500 border-2 border-transparent transition group">
-                    <i data-lucide="monitor" class="mx-auto mb-2 w-8 h-8 text-slate-500 group-hover:text-green-500"></i>
-                    <span class="text-xs font-bold uppercase">Desktop</span>
+                <div onclick="initProject('desktop')" class="p-6 bg-[#262626] rounded-xl cursor-pointer hover:border-blue-500 border-2 border-transparent transition group">
+                    <i data-lucide="monitor" class="mx-auto mb-3 w-8 h-8 text-slate-500 group-hover:text-blue-500"></i>
+                    <span class="text-xs font-bold uppercase text-white">Desktop</span>
                 </div>
-                <div onclick="initProject('custom')" class="p-6 bg-slate-900 rounded-3xl cursor-pointer hover:border-green-500 border-2 border-transparent transition group">
-                    <i data-lucide="maximize" class="mx-auto mb-2 w-8 h-8 text-slate-500 group-hover:text-green-500"></i>
-                    <span class="text-xs font-bold uppercase">Custom</span>
+                <div onclick="initProject('custom')" class="p-6 bg-[#262626] rounded-xl cursor-pointer hover:border-blue-500 border-2 border-transparent transition group">
+                    <i data-lucide="maximize" class="mx-auto mb-3 w-8 h-8 text-slate-500 group-hover:text-blue-500"></i>
+                    <span class="text-xs font-bold uppercase text-white">Custom</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Page Manager Modal -->
+    <!-- Page Manager -->
     <div id="page-manager-modal">
-        <div class="bg-slate-900 p-8 rounded-3xl border border-white/10 w-96">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-white">Pages</h2>
-                <button onclick="togglePageManager()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <div id="pages-list" class="space-y-2 mb-6 max-h-60 overflow-y-auto pr-2"></div>
-            <div class="pt-4 border-t border-white/10">
-                <div class="flex gap-2">
-                    <input type="text" id="new-page-name" placeholder="Page Name (e.g. About)" class="prop-input h-10">
-                    <button onclick="addNewPage()" class="bg-green-600 hover:bg-green-500 text-white px-4 rounded-lg font-bold text-xs"><i data-lucide="plus" class="w-4 h-4"></i></button>
-                </div>
-            </div>
+        <div class="bg-[#262626] p-8 rounded-xl border border-[#3f3f46] w-96">
+            <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-white">Pages</h2><button onclick="togglePageManager()" class="text-slate-400 hover:text-white"><i data-lucide="x"></i></button></div>
+            <div id="pages-list" class="space-y-2 mb-6 max-h-60 overflow-y-auto"></div>
+            <div class="flex gap-2"><input type="text" id="new-page-name" placeholder="Page Name" class="prop-input h-10"><button onclick="addNewPage()" class="bg-blue-600 text-white px-4 rounded font-bold hover:bg-blue-500">+</button></div>
         </div>
     </div>
 
-    <!-- Page Settings -->
+    <!-- Global Settings (RESTORED MISSING SETTINGS) -->
     <div id="page-settings-modal">
-        <div class="bg-slate-900 p-8 rounded-3xl border border-white/10 w-96 text-center">
-            <h2 class="text-xl font-bold mb-6 text-green-500">Project Config</h2>
-            <div class="space-y-4">
-                <div class="text-left">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase">Screen Scaling</label>
-                    <select id="setting-scale-mode" class="prop-select mt-2">
-                        <option value="fixed">Fixed (Centered)</option>
-                        <option value="scale">Auto-Scale (TV/Large Screen)</option>
-                    </select>
-                </div>
-                <div class="text-left">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase">Global Background</label>
-                    <input type="color" id="setting-page-bg" class="prop-input h-10 p-1" value="#020617">
-                </div>
+        <div class="bg-[#262626] p-8 rounded-xl border border-[#3f3f46] w-96 text-center">
+            <h2 class="text-xl font-bold mb-6 text-blue-500">Project Config</h2>
+            
+            <!-- Restored Scaling Option -->
+            <div class="text-left mb-4">
+                <label class="prop-title">View Mode (Export)</label>
+                <select id="setting-scale-mode" class="prop-select">
+                    <option value="fixed">Fixed Size (Centered)</option>
+                    <option value="scale">Auto-Fit to Screen</option>
+                </select>
             </div>
-            <button onclick="togglePageSettings()" class="w-full mt-8 bg-green-600 py-3 rounded-xl font-bold">Close</button>
+
+            <!-- Background Color -->
+            <div class="text-left mb-4">
+                <label class="prop-title">Background Color</label>
+                <input type="color" id="setting-page-bg" class="prop-input h-10 p-1" value="#ffffff">
+            </div>
+
+            <button onclick="togglePageSettings()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded font-bold mt-4">Close</button>
         </div>
     </div>
 
-    <!-- Header Navigation -->
-    <nav class="h-16 bg-slate-950 border-b border-white/5 flex justify-between items-center px-6 z-[2500] fixed w-full top-0">
+    <!-- Top Navigation -->
+    <nav class="h-[50px] bg-[#262626] border-b border-[#3f3f46] flex justify-between items-center px-4 z-[2500] fixed w-full top-0">
         <div class="flex items-center gap-4">
-            <button onclick="toggleToolkit()" class="p-2 bg-green-500/10 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition">
-                <i data-lucide="layout-grid" class="w-6 h-6"></i>
-            </button>
-            <span class="font-bold text-lg tracking-tighter italic uppercase hidden md:inline">Studio<span class="text-green-500">Pro</span></span>
-            
-            <button onclick="togglePageManager()" class="ml-4 px-4 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg text-xs font-bold hover:bg-slate-700 transition flex items-center gap-2">
-                <i data-lucide="file" class="w-4 h-4 text-blue-400"></i>
-                <span id="current-page-display">Home</span>
-                <i data-lucide="chevron-down" class="w-3 h-3 text-slate-500"></i>
+            <span class="font-bold text-lg tracking-tighter italic uppercase text-white">Studio<span class="text-blue-500">Pro</span></span>
+            <div class="h-6 w-[1px] bg-[#3f3f46] mx-2"></div>
+            <button onclick="togglePageManager()" class="px-3 py-1 bg-[#18181b] border border-[#3f3f46] text-white rounded text-xs font-bold flex items-center gap-2 hover:border-blue-500 transition">
+                <i data-lucide="file" class="w-3 h-3 text-blue-400"></i><span id="current-page-display">Home</span><i data-lucide="chevron-down" class="w-3 h-3 text-slate-500"></i>
             </button>
         </div>
-        <div class="flex items-center gap-3">
-            <button onclick="togglePageSettings()" class="p-2 bg-slate-800 text-slate-300 rounded-full hover:bg-slate-700 transition">
-                <i data-lucide="settings" class="w-4 h-4"></i>
-            </button>
-            <button onclick="exportCode()" class="bg-green-600 hover:bg-green-500 text-white px-5 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-lg shadow-green-600/20">
-                <i data-lucide="download" class="w-4 h-4"></i> Export All
-            </button>
+        <div class="flex items-center gap-2">
+            <button onclick="togglePageSettings()" class="p-2 text-slate-400 hover:text-white"><i data-lucide="settings" class="w-4 h-4"></i></button>
+            <button onclick="exportCode()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded text-xs font-bold flex items-center gap-2"><i data-lucide="download" class="w-3 h-3"></i> Export</button>
         </div>
     </nav>
 
-    <div class="flex flex-1 overflow-hidden h-screen pt-16">
+    <div class="flex flex-1 overflow-hidden h-screen pt-[50px]">
         
         <!-- Toolkit Sidebar -->
         <aside id="toolkit-sidebar">
-            <div class="p-4 border-b border-white/5 flex justify-between items-center">
-                <span class="text-xs font-bold uppercase text-slate-500 tracking-widest">Components</span>
-                <button onclick="toggleToolkit()" class="text-slate-400"><i data-lucide="x" class="w-4 h-4"></i></button>
-            </div>
-            <div class="sidebar-content">
-                <div draggable="true" ondragstart="dragStart(event)" data-type="text" class="tool-item"><i data-lucide="type" class="text-blue-400"></i><span>Text</span></div>
-                <div draggable="true" ondragstart="dragStart(event)" data-type="button" class="tool-item"><i data-lucide="mouse-pointer" class="text-green-400"></i><span>Button</span></div>
-                <div draggable="true" ondragstart="dragStart(event)" data-type="image" class="tool-item"><i data-lucide="image" class="text-purple-400"></i><span>Image</span></div>
-                <div draggable="true" ondragstart="dragStart(event)" data-type="box" class="tool-item"><i data-lucide="square" class="text-orange-400"></i><span>Div Box</span></div>
-                <div draggable="true" ondragstart="dragStart(event)" data-type="circle" class="tool-item"><i data-lucide="circle" class="text-pink-400"></i><span>Circle</span></div>
-                <div draggable="true" ondragstart="dragStart(event)" data-type="input" class="tool-item"><i data-lucide="text-cursor-input" class="text-yellow-400"></i><span>Input</span></div>
-                <div draggable="true" ondragstart="dragStart(event)" data-type="card" class="tool-item"><i data-lucide="layout" class="text-teal-400"></i><span>Card</span></div>
+            <div draggable="true" ondragstart="dragStart(event)" data-type="text" class="tool-item" data-label="Text"><i data-lucide="type" class="w-5 h-5"></i></div>
+            <div draggable="true" ondragstart="dragStart(event)" data-type="button" class="tool-item" data-label="Button"><i data-lucide="mouse-pointer-2" class="w-5 h-5"></i></div>
+            <div draggable="true" ondragstart="dragStart(event)" data-type="image" class="tool-item" data-label="Image"><i data-lucide="image" class="w-5 h-5"></i></div>
+            <div draggable="true" ondragstart="dragStart(event)" data-type="box" class="tool-item" data-label="Box"><i data-lucide="square" class="w-5 h-5"></i></div>
+            <div draggable="true" ondragstart="dragStart(event)" data-type="circle" class="tool-item" data-label="Circle"><i data-lucide="circle" class="w-5 h-5"></i></div>
+            <div draggable="true" ondragstart="dragStart(event)" data-type="input" class="tool-item" data-label="Input"><i data-lucide="text-cursor-input" class="w-5 h-5"></i></div>
+            <div draggable="true" ondragstart="dragStart(event)" data-type="card" class="tool-item" data-label="Card"><i data-lucide="layout" class="w-5 h-5"></i></div>
+            
+            <div class="mt-auto mb-4 border-t border-[#3f3f46] w-8 pt-3 flex justify-center">
+                 <button onclick="resetView()" title="Fit Screen" class="text-[10px] text-gray-400 font-bold border border-gray-600 rounded px-1 hover:text-white">100%</button>
             </div>
         </aside>
 
-        <!-- Workspace -->
-        <main id="workspace" onclick="deselectAll(event)">
-            <!-- Wrapper for Zooming -->
+        <!-- Workspace Canvas -->
+        <main id="workspace">
             <div id="zoom-wrapper">
-                <div id="canvas" ondragover="allowDrop(event)" ondrop="dropElement(event)"></div>
+                <div id="canvas" ondragover="allowDrop(event)" ondrop="dropElement(event)">
+                    <div id="guide-layer"></div>
+                </div>
             </div>
+            <div id="zoom-info">Shift + Drag to Pan</div>
         </main>
-
-        <!-- Zoom Controls -->
-        <div id="zoom-controls">
-            <button onclick="zoomCanvas(-0.1)" class="text-slate-400 hover:text-white"><i data-lucide="minus" class="w-4 h-4"></i></button>
-            <span id="zoom-val" class="text-xs font-bold text-white w-8 text-center">100%</span>
-            <button onclick="zoomCanvas(0.1)" class="text-slate-400 hover:text-white"><i data-lucide="plus" class="w-4 h-4"></i></button>
-        </div>
 
         <!-- Properties Panel -->
         <aside id="properties">
-            <div class="p-4 border-b border-white/5 flex justify-between items-center bg-slate-950">
-                <span class="text-xs font-bold uppercase text-slate-400">Edit Settings</span>
-                <button onclick="closePanel()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            <div class="h-10 flex justify-between items-center px-4 bg-[#18181b] border-b border-[#3f3f46]">
+                <span class="text-xs font-bold uppercase text-white">Properties</span>
+                <button onclick="closePanel()" class="text-red-500 hover:text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
-            <div class="p-6 overflow-y-auto flex-1 space-y-6">
-                <div>
-                    <label id="content-label" class="text-[10px] font-bold text-slate-500 uppercase">Content / Image URL</label>
-                    <textarea id="prop-content" rows="2" class="prop-input"></textarea>
+            <div class="overflow-y-auto flex-1 pb-10">
+                
+                <div class="prop-section">
+                    <label class="prop-title text-yellow-500">Element ID</label>
+                    <input type="text" id="prop-id" class="prop-input font-mono text-yellow-400" placeholder="unique_id">
                 </div>
-                <div id="btn-settings" class="hidden p-3 bg-green-500/5 rounded-xl border border-green-500/10 space-y-3">
-                    <p class="text-[10px] font-bold text-green-500 uppercase">Link (Use #PageName)</p>
-                    <input type="text" id="prop-href" class="prop-input" placeholder="#About">
+
+                <div class="prop-section">
+                    <label class="prop-title">Transform</label>
+                    <div class="prop-row">
+                        <div><span class="text-[9px] text-gray-500">W</span><input type="number" id="prop-w" class="prop-input"></div>
+                        <div><span class="text-[9px] text-gray-500">H</span><input type="number" id="prop-h" class="prop-input"></div>
+                    </div>
+                </div>
+
+                <div class="prop-section">
+                    <label class="prop-title">Content & Style</label>
+                    
+                    <label class="text-[10px] text-gray-500 mt-2 block">Text / URL / Placeholder</label>
+                    <textarea id="prop-content" rows="3" class="prop-input"></textarea>
+
+                    <div class="prop-row mt-2">
+                        <div class="w-1/2">
+                            <label class="text-[10px] text-gray-500">Text Color</label>
+                            <div class="flex gap-1">
+                                <input type="color" id="prop-color" class="w-8 h-8 rounded bg-transparent border border-gray-600 cursor-pointer">
+                            </div>
+                        </div>
+                        <div class="w-1/2">
+                            <label class="text-[10px] text-gray-500">Background</label>
+                            <div class="flex gap-1">
+                                <input type="color" id="prop-bg" class="w-8 h-8 rounded bg-transparent border border-gray-600 cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+
+                    <label class="text-[10px] text-gray-500 mt-2 block">Font Family</label>
+                    <select id="prop-font" class="prop-select">
+                        <option value="'Poppins', sans-serif">Poppins</option>
+                        <option value="'Roboto', sans-serif">Roboto</option>
+                        <option value="'Montserrat', sans-serif">Montserrat</option>
+                        <option value="'Open Sans', sans-serif">Open Sans</option>
+                        <option value="serif">Serif</option>
+                        <option value="monospace">Monospace</option>
+                    </select>
+                </div>
+
+                <div class="prop-section">
+                    <label class="prop-title">Decorations</label>
+                    <label class="text-[10px] text-gray-500">Border Radius</label>
+                    <input type="number" id="prop-radius" class="prop-input">
+                </div>
+
+                <div id="btn-settings" class="prop-section hidden">
+                    <label class="prop-title text-blue-500">Link Actions</label>
+                    <input type="text" id="prop-href" class="prop-input" placeholder="#PageID or https://...">
                     <select id="prop-target" class="prop-select">
                         <option value="_self">Same Tab</option>
                         <option value="_blank">New Tab</option>
                     </select>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="text-[10px] font-bold text-slate-500 uppercase">Width</label><input type="number" id="prop-w" class="prop-input"></div>
-                    <div><label class="text-[10px] font-bold text-slate-500 uppercase">Height</label><input type="number" id="prop-h" class="prop-input"></div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="text-[10px] font-bold text-slate-500 uppercase">Text Color</label><input type="color" id="prop-color" class="prop-input h-10 p-1"></div>
-                    <div><label class="text-[10px] font-bold text-slate-500 uppercase">Background</label><input type="color" id="prop-bg" class="prop-input h-10 p-1"></div>
-                </div>
-                <div><label class="text-[10px] font-bold text-slate-500 uppercase">Border Radius</label><input type="number" id="prop-radius" class="prop-input"></div>
-                <div>
-                    <label class="text-[10px] font-bold text-slate-500 uppercase">Font</label>
-                    <select id="prop-font" class="prop-select">
-                        <option value="'Poppins', sans-serif">Poppins</option>
-                        <option value="'Roboto', sans-serif">Roboto</option>
-                        <option value="'Montserrat', sans-serif">Montserrat</option>
-                    </select>
-                </div>
-                <div class="pt-4 border-t border-white/5 space-y-2">
-                    <button onclick="changeZ(10)" class="w-full bg-slate-800 py-2 rounded-lg text-xs font-bold">Bring Front</button>
-                    <button onclick="changeZ(-10)" class="w-full bg-slate-800 py-2 rounded-lg text-xs font-bold">Send Back</button>
+
+                <div class="prop-section">
+                    <label class="prop-title">Layer</label>
+                    <div class="flex gap-2">
+                        <button onclick="changeZ(1)" class="w-1/2 bg-[#3f3f46] py-1 rounded text-[10px] hover:bg-white hover:text-black">Forward</button>
+                        <button onclick="changeZ(-1)" class="w-1/2 bg-[#3f3f46] py-1 rounded text-[10px] hover:bg-white hover:text-black">Backward</button>
+                    </div>
                 </div>
             </div>
         </aside>
@@ -315,144 +338,121 @@
         const canvas = document.getElementById('canvas');
         const zoomWrapper = document.getElementById('zoom-wrapper');
         const propertiesPanel = document.getElementById('properties');
-        const toolkitSidebar = document.getElementById('toolkit-sidebar');
-        const settingsModal = document.getElementById('page-settings-modal');
-        const pageManagerModal = document.getElementById('page-manager-modal');
+        const workspace = document.getElementById('workspace');
         
-        // State
         let pages = [];
         let currentPageId = null;
         let selectedElement = null;
         let zIndexCounter = 1000;
-        let currentZoom = 1;
+        let viewState = { scale: 1, panX: 0, panY: 0, isPanning: false, startX: 0, startY: 0 };
 
-        // --- Layout & Zoom Functions ---
-        function toggleToolkit() { 
-            toolkitSidebar.classList.toggle('open');
-            document.body.classList.toggle('sidebar-open');
+        // --- GLOBAL PAN & ZOOM ---
+        function startPan(e) {
+            e.preventDefault();
+            viewState.isPanning = true;
+            viewState.startX = e.clientX - viewState.panX;
+            viewState.startY = e.clientY - viewState.panY;
+            document.body.classList.add('is-panning');
         }
-
-        function togglePageSettings() { settingsModal.style.display = (settingsModal.style.display === 'flex') ? 'none' : 'flex'; }
-        
-        function togglePageManager() {
-            pageManagerModal.style.display = (pageManagerModal.style.display === 'flex') ? 'none' : 'flex';
-            if(pageManagerModal.style.display === 'flex') renderPageList();
+        workspace.addEventListener('mousedown', (e) => { if (e.shiftKey || e.button === 1) startPan(e); });
+        window.addEventListener('mousemove', (e) => {
+            if(viewState.isPanning) {
+                e.preventDefault();
+                viewState.panX = e.clientX - viewState.startX;
+                viewState.panY = e.clientY - viewState.startY;
+                updateTransform();
+            }
+        });
+        window.addEventListener('mouseup', () => { viewState.isPanning = false; document.body.classList.remove('is-panning'); });
+        workspace.addEventListener('wheel', (e) => {
+            if(e.ctrlKey || e.metaKey || !viewState.isPanning) {
+                e.preventDefault();
+                const newScale = Math.min(Math.max(0.1, viewState.scale - (e.deltaY * 0.001)), 5.0);
+                viewState.scale = newScale;
+                updateTransform();
+            }
+        });
+        function updateTransform() {
+            zoomWrapper.style.transform = `translate(${viewState.panX}px, ${viewState.panY}px) scale(${viewState.scale})`;
+            document.getElementById('zoom-info').innerText = `Zoom: ${Math.round(viewState.scale*100)}% (Shift+Drag to Pan)`;
         }
+        function resetView() { viewState.scale = 0.8; viewState.panX = 0; viewState.panY = 0; updateTransform(); }
 
-        function closePanel() { 
-            propertiesPanel.classList.remove('open');
-            document.body.classList.remove('props-open');
-        }
-
-        function zoomCanvas(change) {
-            currentZoom += change;
-            if(currentZoom < 0.2) currentZoom = 0.2;
-            if(currentZoom > 2.0) currentZoom = 2.0;
-            zoomWrapper.style.transform = `scale(${currentZoom})`;
-            document.getElementById('zoom-val').innerText = Math.round(currentZoom * 100) + '%';
-        }
-
-        // --- Initialization ---
+        // --- APP LOGIC ---
         function initProject(type) {
             canvas.style.borderRadius = '0px';
-            if(type === 'mobile') { canvas.style.width = '375px'; canvas.style.height = '667px'; canvas.style.borderRadius = '20px'; }
-            else if(type === 'tablet') { canvas.style.width = '700px'; canvas.style.height = '900px'; canvas.style.borderRadius = '15px'; }
-            else if(type === 'desktop') { canvas.style.width = '1200px'; canvas.style.height = '800px'; }
+            if(type === 'mobile') { canvas.style.width = '375px'; canvas.style.height = '667px'; canvas.style.borderRadius = '0px'; }
+            else if(type === 'tablet') { canvas.style.width = '768px'; canvas.style.height = '1024px'; }
+            else if(type === 'desktop') { canvas.style.width = '1280px'; canvas.style.height = '800px'; }
             else { canvas.style.width = '1000px'; canvas.style.height = '600px'; }
             
-            // Adjust zoom automatically for smaller screens on init
-            if(window.innerHeight < 800) zoomCanvas(-0.2);
-
             const initialPage = { id: 'page_' + Date.now(), name: 'Home', content: '' };
             pages.push(initialPage);
             currentPageId = initialPage.id;
-            
             document.getElementById('setup-modal').style.display = 'none';
             renderPageList();
+            resetView();
         }
 
-        // --- Multi-Page Logic ---
+        function togglePageManager() {
+            const modal = document.getElementById('page-manager-modal');
+            modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+            if(modal.style.display === 'flex') renderPageList();
+        }
+        function togglePageSettings() {
+            const modal = document.getElementById('page-settings-modal');
+            modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+        }
+        function closePanel() { propertiesPanel.classList.remove('open'); }
+        function openSidebar() { propertiesPanel.classList.add('open'); syncInputs(); }
+
         function renderPageList() {
             const list = document.getElementById('pages-list');
             list.innerHTML = '';
             pages.forEach((p, index) => {
                 const isActive = p.id === currentPageId;
                 const div = document.createElement('div');
-                div.className = `flex justify-between items-center p-3 rounded-lg border ${isActive ? 'border-green-500 bg-green-500/10' : 'border-white/5 bg-slate-800'}`;
-                div.innerHTML = `
-                    <div class="flex items-center gap-3 flex-1 cursor-pointer" onclick="switchPage('${p.id}')">
-                        <i data-lucide="${index === 0 ? 'home' : 'file'}" class="w-4 h-4 ${isActive ? 'text-green-500' : 'text-slate-500'}"></i>
-                        <span class="text-sm font-bold ${isActive ? 'text-white' : 'text-slate-400'}">${p.name}</span>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="renamePage('${p.id}')" class="p-1 hover:text-blue-400 text-slate-500"><i data-lucide="pencil" class="w-3 h-3"></i></button>
-                        ${pages.length > 1 ? `<button onclick="deletePage('${p.id}')" class="p-1 hover:text-red-400 text-slate-500"><i data-lucide="trash" class="w-3 h-3"></i></button>` : ''}
-                    </div>
-                `;
+                div.className = `flex justify-between items-center p-2 rounded mb-1 border ${isActive ? 'border-blue-500 bg-blue-500/10' : 'border-transparent hover:bg-[#3f3f46]'}`;
+                div.innerHTML = `<div class="cursor-pointer font-medium text-sm ${isActive?'text-white':'text-slate-400'}" onclick="switchPage('${p.id}')">${p.name}</div>`;
                 list.appendChild(div);
             });
-            lucide.createIcons();
             document.getElementById('current-page-display').innerText = pages.find(p => p.id === currentPageId).name;
         }
 
         function saveCurrentPage() {
+            document.getElementById('guide-layer').innerHTML = '';
             const page = pages.find(p => p.id === currentPageId);
             if(page) page.content = canvas.innerHTML;
+            if(!canvas.querySelector('#guide-layer')) canvas.appendChild(document.createElement('div')).id = 'guide-layer';
         }
-
         function addNewPage() {
-            const input = document.getElementById('new-page-name');
-            const name = input.value.trim() || `Page ${pages.length + 1}`;
+            const name = document.getElementById('new-page-name').value.trim() || `Page ${pages.length + 1}`;
             saveCurrentPage();
-            const newPage = { id: 'page_' + Date.now(), name: name, content: '' };
+            const newPage = { id: 'page_' + Date.now(), name: name, content: '<div id="guide-layer"></div>' };
             pages.push(newPage);
-            input.value = '';
             switchPage(newPage.id);
+            document.getElementById('new-page-name').value = '';
         }
-
         function switchPage(id) {
             if(id === currentPageId) return;
             saveCurrentPage();
-            deselectAll({target: document.getElementById('workspace')});
+            deselectAll({target: workspace});
             currentPageId = id;
             const page = pages.find(p => p.id === id);
             canvas.innerHTML = page.content;
+            if(!document.getElementById('guide-layer')) canvas.appendChild(document.createElement('div')).id = 'guide-layer';
             rehydrateElements();
             renderPageList();
-            document.getElementById('current-page-display').innerText = page.name;
         }
 
-        function renamePage(id) {
-            const newName = prompt("Enter new page name:");
-            if(newName) {
-                pages.find(p => p.id === id).name = newName;
-                renderPageList();
-                document.getElementById('current-page-display').innerText = pages.find(p => p.id === currentPageId).name;
-            }
-        }
-
-        function deletePage(id) {
-            if(confirm("Delete this page?")) {
-                const index = pages.findIndex(p => p.id === id);
-                pages.splice(index, 1);
-                if(id === currentPageId) {
-                    currentPageId = pages[0].id;
-                    canvas.innerHTML = pages[0].content;
-                    rehydrateElements();
-                }
-                renderPageList();
-            }
-        }
-
-        // --- Drag & Drop Core ---
+        // --- DRAG & DROP ---
         function dragStart(e) { e.dataTransfer.setData("type", e.target.getAttribute('data-type')); }
         function allowDrop(e) { e.preventDefault(); }
         function dropElement(e) {
             e.preventDefault();
-            // Need to account for zoom when dropping
             const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) / currentZoom;
-            const y = (e.clientY - rect.top) / currentZoom;
+            const x = (e.clientX - rect.left) / viewState.scale;
+            const y = (e.clientY - rect.top) / viewState.scale;
             createWidget(e.dataTransfer.getData("type"), x, y);
         }
 
@@ -462,28 +462,26 @@
             el.style.left = x + 'px'; el.style.top = y + 'px';
             el.style.zIndex = ++zIndexCounter;
             el.setAttribute('data-type', type);
+            el.id = type + '_' + Math.random().toString(36).substr(2, 5);
 
-            let inner = '';
-            let sw=200, sh=50;
-
-            if(type === 'text') inner = `<div class="element-content text-black text-xl font-bold">Edit Text</div>`;
-            else if(type === 'button') { inner = `<a href="#" class="element-content bg-green-600 text-white px-6 rounded-lg font-bold">Button</a>`; sw=150; sh=45; }
-            else if(type === 'image') { inner = `<img src="https://via.placeholder.com/300" class="element-content object-cover rounded-lg">`; sw=250; sh=150; }
-            else if(type === 'box') { inner = `<div class="element-content border border-slate-300 rounded-md"></div>`; sw=150; sh=150; }
-            else if(type === 'circle') { inner = `<div class="element-content bg-blue-500 rounded-full"></div>`; sw=100; sh=100; }
-            else if(type === 'input') { inner = `<input placeholder="Type..." class="element-content border border-slate-300 rounded-lg px-4 text-black">`; sw=250; sh=45; }
-            else if(type === 'card') { inner = `<div class="element-content bg-white border border-slate-200 rounded-2xl p-4 flex flex-col shadow-sm"><div class="w-full h-20 bg-slate-100 rounded-xl mb-2"></div><div class="h-3 w-3/4 bg-slate-200 rounded"></div></div>`; sw=200; sh=240; }
+            let inner = '', sw=200, sh=60;
+            if(type === 'text') { inner = `<div class="element-content text-black text-xl font-bold" style="font-family: 'Poppins', sans-serif;">Edit Text</div>`; }
+            else if(type === 'button') { inner = `<a href="#" class="element-content bg-blue-600 text-white rounded-lg font-bold flex items-center justify-center h-full w-full" style="text-decoration: none;">Button</a>`; sw=140; sh=45; }
+            else if(type === 'image') { inner = `<img src="https://via.placeholder.com/300" class="element-content object-cover w-full h-full">`; sw=200; sh=150; }
+            else if(type === 'box') { inner = `<div class="element-content border border-slate-300 bg-gray-100 w-full h-full"></div>`; sw=150; sh=150; }
+            else if(type === 'circle') { inner = `<div class="element-content bg-red-500 rounded-full w-full h-full"></div>`; sw=100; sh=100; }
+            else if(type === 'input') { inner = `<input placeholder="Enter text..." class="element-content border border-slate-300 rounded px-3 w-full h-full text-black">`; sw=220; sh=40; }
+            else if(type === 'card') { inner = `<div class="element-content bg-white border border-slate-200 p-4 shadow-sm w-full h-full flex flex-col"><div class="h-24 bg-slate-100 mb-2 w-full"></div><div class="h-4 bg-slate-200 w-3/4"></div></div>`; sw=200; sh=250; }
 
             el.innerHTML = `
                 <div class="element-controls">
-                    <div class="control-btn btn-copy" onclick="duplicateEl(event, this.parentElement.parentElement)"><i data-lucide="copy" class="w-4 h-4"></i></div>
-                    <div class="control-btn btn-edit" onclick="openSidebar(event, this.parentElement.parentElement)"><i data-lucide="pencil" class="w-4 h-4"></i></div>
-                    <div class="control-btn btn-del" onclick="deleteEl(event, this.parentElement.parentElement)"><i data-lucide="trash-2" class="w-4 h-4"></i></div>
+                    <div class="control-btn btn-copy" title="Duplicate"><i data-lucide="copy" class="w-4 h-4"></i></div>
+                    <div class="control-btn btn-edit" title="Edit Properties"><i data-lucide="pencil" class="w-4 h-4"></i></div>
+                    <div class="control-btn btn-del" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></div>
                 </div>
                 ${inner}
                 <div class="resizer"></div>
             `;
-
             el.style.width = sw + 'px'; el.style.height = sh + 'px';
             attachListeners(el);
             canvas.appendChild(el);
@@ -491,210 +489,180 @@
             selectElement(el);
         }
 
-        // --- Event Listeners Management ---
+        // --- INTERACTION ---
         function attachListeners(el) {
+            const btnCopy = el.querySelector('.btn-copy');
+            const btnEdit = el.querySelector('.btn-edit');
+            const btnDel = el.querySelector('.btn-del');
+
+            if(btnCopy) btnCopy.addEventListener('mousedown', (e) => duplicateEl(e, el));
+            if(btnEdit) btnEdit.addEventListener('mousedown', (e) => { e.stopPropagation(); openSidebar(); });
+            if(btnDel) btnDel.addEventListener('mousedown', (e) => deleteEl(e, el));
+
             el.addEventListener('mousedown', (e) => {
+                if(e.shiftKey) { startPan(e); return; }
                 if(e.target.closest('.element-controls') || e.target.classList.contains('resizer')) return;
-                selectElement(el);
-                startDrag(e, el);
+                e.stopPropagation();
+                selectElement(el); 
+                startMove(e, el);
             });
+
             const resizer = el.querySelector('.resizer');
             if(resizer) resizer.addEventListener('mousedown', (e) => { e.stopPropagation(); startResize(e, el); });
         }
-
-        function rehydrateElements() {
-            const elements = canvas.querySelectorAll('.builder-element');
-            elements.forEach(el => attachListeners(el));
-            lucide.createIcons();
-        }
-
-        // --- Interaction Logic ---
-        function selectElement(el) {
-            if(selectedElement) selectedElement.classList.remove('selected');
-            selectedElement = el;
-            selectedElement.classList.add('selected');
-        }
-
-        function deselectAll(e) {
-            if(e.target.id === 'workspace' || e.target.id === 'canvas' || e.target.id === 'zoom-wrapper') {
-                if(selectedElement) selectedElement.classList.remove('selected');
-                selectedElement = null;
-                closePanel();
-            }
-        }
-
-        function openSidebar(e, el) {
-            e.stopPropagation();
-            selectElement(el);
-            propertiesPanel.classList.add('open');
-            document.body.classList.add('props-open');
-            syncInputs();
-        }
-
+        function rehydrateElements() { canvas.querySelectorAll('.builder-element').forEach(el => attachListeners(el)); lucide.createIcons(); }
+        function selectElement(el) { if(selectedElement) selectedElement.classList.remove('selected'); selectedElement = el; selectedElement.classList.add('selected'); syncInputs(); }
+        function deselectAll(e) { if(e.target.id === 'workspace' || e.target.id === 'canvas' || e.target.id === 'zoom-wrapper') { if(selectedElement) selectedElement.classList.remove('selected'); selectedElement = null; closePanel(); } }
         function deleteEl(e, el) { e.stopPropagation(); el.remove(); closePanel(); }
+        function duplicateEl(e, el) { e.stopPropagation(); const clone = el.cloneNode(true); clone.id = el.getAttribute('data-type') + '_' + Math.random().toString(36).substr(2, 5); clone.style.left = (parseFloat(el.style.left)+20)+'px'; clone.style.top = (parseFloat(el.style.top)+20)+'px'; clone.style.zIndex = ++zIndexCounter; clone.classList.remove('selected'); attachListeners(clone); canvas.appendChild(clone); selectElement(clone); lucide.createIcons(); }
 
+        // --- SMART SNAPPING ---
+        function startMove(e, el) {
+            const startX = e.clientX, startY = e.clientY;
+            const startLeft = parseFloat(el.style.left), startTop = parseFloat(el.style.top);
+            const w = el.offsetWidth, h = el.offsetHeight;
+            const targets = Array.from(canvas.querySelectorAll('.builder-element')).filter(x => x !== el).map(x => ({ l: x.offsetLeft, c: x.offsetLeft + x.offsetWidth/2, r: x.offsetLeft + x.offsetWidth, t: x.offsetTop, m: x.offsetTop + x.offsetHeight/2, b: x.offsetTop + x.offsetHeight }));
+            targets.push({l:0, c:canvas.offsetWidth/2, r:canvas.offsetWidth, t:0, m:canvas.offsetHeight/2, b:canvas.offsetHeight});
+
+            const SNAP = 6;
+            const move = (e) => {
+                const dx = (e.clientX - startX) / viewState.scale;
+                const dy = (e.clientY - startY) / viewState.scale;
+                let rawL = startLeft + dx, rawT = startTop + dy, finalL = rawL, finalT = rawT;
+                let snappedX = false, snappedY = false;
+                document.getElementById('guide-layer').innerHTML = '';
+
+                for(let t of targets) {
+                    if(!snappedX) {
+                        if(Math.abs(rawL - t.l) < SNAP) { finalL = t.l; snappedX=true; drawGuide('v', t.l); }
+                        else if(Math.abs(rawL - t.c) < SNAP) { finalL = t.c; snappedX=true; drawGuide('v', t.c); }
+                        else if(Math.abs(rawL - t.r) < SNAP) { finalL = t.r; snappedX=true; drawGuide('v', t.r); }
+                        else if(Math.abs((rawL+w) - t.l) < SNAP) { finalL = t.l-w; snappedX=true; drawGuide('v', t.l); }
+                        else if(Math.abs((rawL+w) - t.r) < SNAP) { finalL = t.r-w; snappedX=true; drawGuide('v', t.r); }
+                        else if(Math.abs((rawL+w/2) - t.c) < SNAP) { finalL = t.c-w/2; snappedX=true; drawGuide('v', t.c); }
+                    }
+                    if(!snappedY) {
+                        if(Math.abs(rawT - t.t) < SNAP) { finalT = t.t; snappedY=true; drawGuide('h', t.t); }
+                        else if(Math.abs(rawT - t.m) < SNAP) { finalT = t.m; snappedY=true; drawGuide('h', t.m); }
+                        else if(Math.abs(rawT - t.b) < SNAP) { finalT = t.b; snappedY=true; drawGuide('h', t.b); }
+                        else if(Math.abs((rawT+h) - t.t) < SNAP) { finalT = t.t-h; snappedY=true; drawGuide('h', t.t); }
+                        else if(Math.abs((rawT+h) - t.b) < SNAP) { finalT = t.b-h; snappedY=true; drawGuide('h', t.b); }
+                        else if(Math.abs((rawT+h/2) - t.m) < SNAP) { finalT = t.m-h/2; snappedY=true; drawGuide('h', t.m); }
+                    }
+                }
+                el.style.left = finalL + 'px'; el.style.top = finalT + 'px';
+            };
+            const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); document.getElementById('guide-layer').innerHTML = ''; };
+            window.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
+        }
+
+        function drawGuide(type, pos) {
+            const d = document.createElement('div');
+            d.className = `guide-line ${type === 'v' ? 'guide-v' : 'guide-h'}`;
+            if(type === 'v') d.style.left = pos + 'px'; else d.style.top = pos + 'px';
+            document.getElementById('guide-layer').appendChild(d);
+        }
+
+        function startResize(e, el) {
+            const startX = e.clientX, startY = e.clientY, sw = el.offsetWidth, sh = el.offsetHeight;
+            const resize = (e) => { el.style.width = (sw + (e.clientX - startX) / viewState.scale) + 'px'; el.style.height = (sh + (e.clientY - startY) / viewState.scale) + 'px'; };
+            window.addEventListener('mousemove', resize); window.addEventListener('mouseup', () => window.removeEventListener('mousemove', resize), {once:true});
+        }
+
+        // --- PROPERTIES ---
         function syncInputs() {
             if(!selectedElement) return;
             const content = selectedElement.querySelector('.element-content');
             const type = selectedElement.getAttribute('data-type');
+            
+            document.getElementById('prop-id').value = selectedElement.id;
             document.getElementById('prop-w').value = parseInt(selectedElement.style.width);
             document.getElementById('prop-h').value = parseInt(selectedElement.style.height);
-            document.getElementById('btn-settings').style.display = (type === 'button') ? 'block' : 'none';
             
-            if(type === 'image') {
-                document.getElementById('prop-content').value = content.src;
-                document.getElementById('content-label').innerText = "IMAGE URL";
-            } else {
-                document.getElementById('prop-content').value = content.innerText || content.placeholder || "";
-                document.getElementById('content-label').innerText = "CONTENT / TEXT";
-            }
+            if(type === 'image') document.getElementById('prop-content').value = content.src;
+            else if(type === 'input') document.getElementById('prop-content').value = content.placeholder;
+            else document.getElementById('prop-content').value = content.innerText;
+
+            const comp = window.getComputedStyle(content);
+            document.getElementById('prop-bg').value = rgbToHex(comp.backgroundColor);
+            document.getElementById('prop-color').value = rgbToHex(comp.color);
+            document.getElementById('prop-radius').value = parseInt(comp.borderRadius) || 0;
+            document.getElementById('prop-font').value = content.style.fontFamily.replace(/"/g,"'") || "'Poppins', sans-serif";
+
+            const btnSet = document.getElementById('btn-settings');
             if(type === 'button' && content.tagName === 'A') {
+                btnSet.classList.remove('hidden');
                 document.getElementById('prop-href').value = content.getAttribute('href');
+                document.getElementById('prop-target').value = content.getAttribute('target') || "_self";
+            } else {
+                btnSet.classList.add('hidden');
             }
         }
 
-        function duplicateEl(e, el) {
-            e.stopPropagation();
-            const clone = el.cloneNode(true);
-            clone.style.left = (parseInt(el.style.left) + 20) + 'px';
-            clone.style.top = (parseInt(el.style.top) + 20) + 'px';
-            clone.style.zIndex = ++zIndexCounter;
-            clone.classList.remove('selected');
-            attachListeners(clone);
-            canvas.appendChild(clone);
-            selectElement(clone);
-            lucide.createIcons();
-        }
-
-        ['prop-w', 'prop-h', 'prop-bg', 'prop-color', 'prop-radius', 'prop-font', 'prop-href', 'prop-target'].forEach(id => {
-            document.getElementById(id).addEventListener('input', (e) => {
-                if(!selectedElement) return;
-                const v = e.target.value;
-                const target = selectedElement.querySelector('.element-content');
-                if(id === 'prop-w') selectedElement.style.width = v + 'px';
-                if(id === 'prop-h') selectedElement.style.height = v + 'px';
-                if(id === 'prop-bg') target.style.backgroundColor = v;
-                if(id === 'prop-color') target.style.color = v;
-                if(id === 'prop-radius') target.style.borderRadius = v + 'px';
-                if(id === 'prop-font') target.style.fontFamily = v;
-                if(id === 'prop-href' && target.tagName === 'A') target.setAttribute('href', v);
-                if(id === 'prop-target' && target.tagName === 'A') target.setAttribute('target', v);
-            });
-        });
-
-        document.getElementById('prop-content').addEventListener('input', (e) => {
+        document.getElementById('prop-id').addEventListener('change', e => { if(selectedElement) selectedElement.id = e.target.value; });
+        ['prop-w', 'prop-h'].forEach(id => document.getElementById(id).addEventListener('input', e => { if(selectedElement) id==='prop-w' ? selectedElement.style.width = e.target.value+'px' : selectedElement.style.height = e.target.value+'px'; }));
+        document.getElementById('prop-bg').addEventListener('input', e => { if(selectedElement) selectedElement.querySelector('.element-content').style.backgroundColor = e.target.value; });
+        document.getElementById('prop-color').addEventListener('input', e => { if(selectedElement) selectedElement.querySelector('.element-content').style.color = e.target.value; });
+        document.getElementById('prop-radius').addEventListener('input', e => { if(selectedElement) selectedElement.querySelector('.element-content').style.borderRadius = e.target.value+'px'; });
+        document.getElementById('prop-font').addEventListener('change', e => { if(selectedElement) selectedElement.querySelector('.element-content').style.fontFamily = e.target.value; });
+        document.getElementById('prop-content').addEventListener('input', e => {
             if(!selectedElement) return;
-            const target = selectedElement.querySelector('.element-content');
-            if(target.tagName === 'IMG') target.src = e.target.value;
-            else if(target.tagName === 'INPUT') target.placeholder = e.target.value;
-            else target.innerText = e.target.value;
+            const c = selectedElement.querySelector('.element-content');
+            if(c.tagName === 'IMG') c.src = e.target.value; else if(c.tagName === 'INPUT') c.placeholder = e.target.value; else c.innerText = e.target.value;
         });
+        document.getElementById('prop-href').addEventListener('input', e => { if(selectedElement && selectedElement.querySelector('a')) selectedElement.querySelector('a').setAttribute('href', e.target.value); });
+        document.getElementById('prop-target').addEventListener('change', e => { if(selectedElement && selectedElement.querySelector('a')) selectedElement.querySelector('a').setAttribute('target', e.target.value); });
 
         function changeZ(v) { if(selectedElement) selectedElement.style.zIndex = parseInt(selectedElement.style.zIndex) + v; }
+        function rgbToHex(rgb) { if(!rgb || rgb==='rgba(0, 0, 0, 0)') return '#000000'; if(rgb.startsWith('#')) return rgb; const [r,g,b] = rgb.match(/\d+/g); return "#" + ((1 << 24) + (+r << 16) + (+g << 8) + +b).toString(16).slice(1); }
 
-        function startDrag(e, el) {
-            const ox = e.clientX - el.offsetLeft * currentZoom, oy = e.clientY - el.offsetTop * currentZoom;
-            const move = (e) => { 
-                el.style.left = (e.clientX - ox) / currentZoom + 'px'; 
-                el.style.top = (e.clientY - oy) / currentZoom + 'px'; 
-            };
-            window.addEventListener('mousemove', move);
-            window.addEventListener('mouseup', () => window.removeEventListener('mousemove', move), {once:true});
-        }
-
-        function startResize(e, el) {
-            const sw = el.offsetWidth, sh = el.offsetHeight, sx = e.clientX, sy = e.clientY;
-            const resize = (e) => { 
-                el.style.width = (sw + (e.clientX - sx) / currentZoom) + 'px'; 
-                el.style.height = (sh + (e.clientY - sy) / currentZoom) + 'px'; 
-            };
-            window.addEventListener('mousemove', resize);
-            window.addEventListener('mouseup', () => window.removeEventListener('mousemove', resize), {once:true});
-        }
-
-        // --- UPDATED EXPORT LOGIC (Single File SPA) ---
+        // --- EXPORT LOGIC (CORRECTED) ---
         function exportCode() {
-            saveCurrentPage(); // Save active page first
+            saveCurrentPage();
+            if(document.getElementById('guide-layer')) document.getElementById('guide-layer').remove();
             
-            const pageBg = document.getElementById('setting-page-bg').value;
+            const scaleMode = document.getElementById('setting-scale-mode').value;
+            const bg = document.getElementById('setting-page-bg').value;
             let allPagesHtml = '';
-
-            // Generate HTML for all pages
+            
             pages.forEach((page, index) => {
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = page.content;
-                
-                // Clean up builder artifacts
-                tempDiv.querySelectorAll('.element-controls, .resizer').forEach(e => e.remove());
+                tempDiv.querySelectorAll('.element-controls, .resizer, #guide-layer').forEach(e => e.remove());
                 tempDiv.querySelectorAll('.builder-element').forEach(el => {
-                    el.classList.remove('selected');
-                    el.style.border = 'none';
+                    el.classList.remove('selected'); el.style.border = 'none';
                     if(el.querySelector('.element-content')) el.querySelector('.element-content').style.pointerEvents = 'auto';
                 });
-
-                // Wrap in a page container (Home is visible by default, others hidden)
-                const displayStyle = index === 0 ? 'block' : 'none';
-                const safeName = page.name.replace(/\s+/g, ''); // Remove spaces for ID
-                allPagesHtml += `
-                <div id="${safeName}" class="spa-page" style="display: ${displayStyle}; position: relative; width: 100%; height: 100%;">
-                    ${tempDiv.innerHTML}
-                </div>`;
+                const safeName = page.name.replace(/\s+/g, '');
+                allPagesHtml += `<div id="${safeName}" class="spa-page" style="display: ${index===0?'block':'none'}; position: relative; width: 100%; height: 100%;">${tempDiv.innerHTML}</div>`;
             });
 
-            // SPA Routing Script for the exported file
-            const spaScript = `
+            // Restore guide layer for editor
+            const g = document.createElement('div'); g.id = 'guide-layer'; canvas.appendChild(g);
+
+            // Auto-Scale Script for exported file
+            const scaleScript = scaleMode === 'scale' ? `
             <script>
-                function navigateTo(pageName) {
-                    // Hide all pages
-                    document.querySelectorAll('.spa-page').forEach(el => el.style.display = 'none');
-                    // Show target page
-                    const target = document.getElementById(pageName);
-                    if(target) target.style.display = 'block';
+                function resize() {
+                    const container = document.querySelector('.page-container');
+                    const cw = ${canvas.offsetWidth}, ch = ${canvas.offsetHeight};
+                    const ww = window.innerWidth, wh = window.innerHeight;
+                    const scale = Math.min(ww/cw, wh/ch);
+                    container.style.transform = 'scale('+scale+')';
+                    container.style.transformOrigin = 'top left';
+                    container.style.left = ((ww - cw*scale)/2) + 'px';
+                    container.style.top = ((wh - ch*scale)/2) + 'px';
+                    container.style.position = 'absolute';
                 }
+                window.addEventListener('resize', resize);
+                window.addEventListener('load', resize);
+            <\/script>` : '';
 
-                // Intercept clicks on links starting with #
-                document.addEventListener('click', function(e) {
-                    if(e.target.tagName === 'A' && e.target.getAttribute('href').startsWith('#')) {
-                        e.preventDefault();
-                        const page = e.target.getAttribute('href').substring(1);
-                        navigateTo(page);
-                    }
-                });
-            <\/script>`;
-
-            const finalHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Exported Project</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"><\/script>
-    <style>
-        body { margin: 0; background: ${pageBg}; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; }
-        .page-container { 
-            position: relative; width: ${canvas.offsetWidth}px; height: ${canvas.offsetHeight}px; 
-            background: ${window.getComputedStyle(canvas).backgroundColor}; 
-            overflow: hidden; flex-shrink: 0; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            ${canvas.style.borderRadius ? `border-radius: ${canvas.style.borderRadius}; margin-top: 20px;` : ''}
-        }
-        .builder-element { position: absolute; display: flex; }
-        .element-content { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-decoration: none; }
-    </style>
-</head>
-<body>
-    <div class="page-container">
-        ${allPagesHtml}
-    </div>
-    ${spaScript}
-</body>
-</html>`;
-
-            const blob = new Blob([finalHtml], { type: 'text/html' });
+            const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Project</title><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Roboto:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com"><\/script><style>body{margin:0;background:${bg};display:flex;justify-content:center;min-height:100vh;overflow:${scaleMode==='scale'?'hidden':'auto'}}.page-container{position:relative;width:${canvas.offsetWidth}px;height:${canvas.offsetHeight}px;background:#fff;box-shadow:0 20px 50px rgba(0,0,0,0.5);overflow:hidden;${scaleMode==='fixed'?'margin-top:20px;':''}${canvas.style.borderRadius?`border-radius:${canvas.style.borderRadius}`:''}}.builder-element{position:absolute}.element-content{width:100%;height:100%;display:flex;align-items:center;justify-content:center;text-decoration:none}</style></head><body><div class="page-container">${allPagesHtml}</div><script>function navigateTo(p){document.querySelectorAll('.spa-page').forEach(e=>e.style.display='none');const t=document.getElementById(p);if(t)t.style.display='block'}document.addEventListener('click',e=>{if(e.target.tagName==='A'&&e.target.getAttribute('href').startsWith('#')){e.preventDefault();navigateTo(e.target.getAttribute('href').substring(1))}})<\/script>${scaleScript}</body></html>`;
+            
             const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'website-export.html';
-            a.click();
+            a.href = URL.createObjectURL(new Blob([html], {type: 'text/html'}));
+            a.download = 'project_export.html'; a.click();
         }
     </script>
 </body>
