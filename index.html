@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudioPro Elite V7 - Final Scale Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Roboto:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --accent: #22c55e;
+            --bg-dark: #020617;
+            --panel-bg: #0f172a;
+        }
+
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background: var(--bg-dark); 
+            color: #f8fafc; 
+            margin: 0; 
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- UI Panels Optimized for All Screens --- */
+        #toolkit-sidebar { 
+            width: 260px; position: fixed; left: -280px; top: 64px; bottom: 0; 
+            z-index: 2000000; background: var(--panel-bg); border-right: 1px solid rgba(255,255,255,0.1);
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+        }
+        #toolkit-sidebar.open { left: 0; }
+
+        #properties {
+            width: 280px; background: var(--panel-bg); border-left: 1px solid rgba(255,255,255,0.1);
+            position: fixed; right: 0; top: 0; bottom: 0; z-index: 2000000; 
+            display: none; flex-direction: column; box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+        }
+
+        .sidebar-content { overflow-y: auto; flex: 1; padding: 15px; }
+        .sidebar-content::-webkit-scrollbar { width: 4px; }
+        .sidebar-content::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+        /* --- Workspace --- */
+        #workspace {
+            height: calc(100vh - 64px); 
+            overflow: auto; 
+            padding: 60px;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1.5px, transparent 1.5px);
+            background-size: 25px 25px;
+            display: flex; justify-content: center; align-items: flex-start;
+        }
+
+        #canvas {
+            background: #ffffff;
+            position: relative; 
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        /* --- Elements & Controls (Z-Index Fix) --- */
+        .builder-element { position: absolute; cursor: grab; box-sizing: border-box; border: 2px solid transparent; }
+        .builder-element.selected { border-color: var(--accent); z-index: 1000000 !important; }
+
+        .element-controls {
+            position: absolute; top: -50px; left: 0;
+            background: #1e293b; padding: 4px; border-radius: 8px; display: none; gap: 4px;
+            border: 1px solid #334155; box-shadow: 0 10px 15px rgba(0,0,0,0.3);
+            pointer-events: auto; z-index: 1000001;
+        }
+        .selected .element-controls { display: flex; }
+
+        .control-btn {
+            width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+            border-radius: 6px; cursor: pointer; transition: 0.2s;
+        }
+        .btn-edit { background: #3b82f6; color: white; }
+        .btn-copy { background: #6366f1; color: white; }
+        .btn-del { background: #ef4444; color: white; }
+
+        .resizer {
+            width: 12px; height: 12px; background: var(--accent); border: 2px solid white;
+            position: absolute; bottom: -6px; right: -6px; border-radius: 50%; cursor: se-resize; display: none;
+        }
+        .selected .resizer { display: block; }
+
+        .element-content { 
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+            overflow: hidden; text-decoration: none; pointer-events: none;
+        }
+
+        /* Tools */
+        .tool-item {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px; padding: 12px; margin-bottom: 10px;
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            cursor: grab; transition: 0.2s;
+        }
+        .tool-item:hover { background: var(--accent); color: white; }
+
+        .prop-input, .prop-select {
+            width: 100%; background: #020617; border: 1px solid #334155;
+            color: white; padding: 8px; border-radius: 6px; font-size: 12px; margin-top: 4px;
+        }
+
+        /* --- Modals --- */
+        #setup-modal, #page-settings-modal { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.98); z-index: 3000000; display: flex; align-items: center; justify-content: center; }
+        #page-settings-modal { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Startup Selection -->
+    <div id="setup-modal">
+        <div class="max-w-2xl w-full p-6 text-center">
+            <h1 class="text-3xl font-black mb-8 italic uppercase tracking-tighter">Studio<span class="text-green-500">Pro</span></h1>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div onclick="initProject('mobile')" class="p-6 bg-slate-900 rounded-3xl cursor-pointer hover:border-green-500 border-2 border-transparent transition group">
+                    <i data-lucide="smartphone" class="mx-auto mb-2 w-8 h-8 text-slate-500 group-hover:text-green-500"></i>
+                    <span class="text-xs font-bold uppercase">Mobile</span>
+                </div>
+                <div onclick="initProject('tablet')" class="p-6 bg-slate-900 rounded-3xl cursor-pointer hover:border-green-500 border-2 border-transparent transition group">
+                    <i data-lucide="tablet" class="mx-auto mb-2 w-8 h-8 text-slate-500 group-hover:text-green-500"></i>
+                    <span class="text-xs font-bold uppercase">Tablet</span>
+                </div>
+                <div onclick="initProject('desktop')" class="p-6 bg-slate-900 rounded-3xl cursor-pointer hover:border-green-500 border-2 border-transparent transition group">
+                    <i data-lucide="monitor" class="mx-auto mb-2 w-8 h-8 text-slate-500 group-hover:text-green-500"></i>
+                    <span class="text-xs font-bold uppercase">Desktop</span>
+                </div>
+                <div onclick="initProject('custom')" class="p-6 bg-slate-900 rounded-3xl cursor-pointer hover:border-green-500 border-2 border-transparent transition group">
+                    <i data-lucide="maximize" class="mx-auto mb-2 w-8 h-8 text-slate-500 group-hover:text-green-500"></i>
+                    <span class="text-xs font-bold uppercase">Custom</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Settings Modal -->
+    <div id="page-settings-modal">
+        <div class="bg-slate-900 p-8 rounded-3xl border border-white/10 w-96 text-center shadow-2xl">
+            <h2 class="text-xl font-bold mb-6 text-green-500">Global Page Settings</h2>
+            <div class="space-y-4">
+                <div class="text-left">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Screen Scaling Mode</label>
+                    <select id="setting-scale-mode" class="prop-select mt-2">
+                        <option value="fixed">Fixed (Classic Centered)</option>
+                        <option value="scale">Auto-Scale (Fill Big Screens/TV)</option>
+                    </select>
+                </div>
+                <div class="text-left">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Page Background</label>
+                    <input type="color" id="setting-page-bg" class="prop-input h-10 p-1" value="#020617">
+                </div>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-6 leading-relaxed italic">"Auto-Scale" সিলেক্ট করলে আপনার ডিজাইনটি বড় টিভিতে অটোমেটিক ফিট হয়ে যাবে।</p>
+            <button onclick="togglePageSettings()" class="w-full mt-8 bg-green-600 py-3 rounded-xl font-bold hover:bg-green-500 transition">Save & Close</button>
+        </div>
+    </div>
+
+    <!-- Header Navigation -->
+    <nav class="h-16 bg-slate-950 border-b border-white/5 flex justify-between items-center px-6 z-[10001]">
+        <div class="flex items-center gap-4">
+            <button onclick="toggleToolkit()" class="p-2 bg-green-500/10 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition">
+                <i data-lucide="layout-grid" class="w-6 h-6"></i>
+            </button>
+            <span class="font-bold text-lg tracking-tighter italic">STUDIO<span class="text-green-500">PRO</span></span>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="togglePageSettings()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-full text-xs font-bold hover:bg-slate-700 transition flex items-center gap-2">
+                <i data-lucide="settings" class="w-4 h-4"></i> Page Settings
+            </button>
+            <button onclick="exportCode()" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-lg shadow-green-600/20 transition">
+                <i data-lucide="send" class="w-4 h-4"></i> Export Design
+            </button>
+        </div>
+    </nav>
+
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- Toolkit Sidebar -->
+        <aside id="toolkit-sidebar">
+            <div class="p-4 border-b border-white/5 flex justify-between items-center">
+                <span class="text-xs font-bold uppercase text-slate-500 tracking-widest">Components</span>
+                <button onclick="toggleToolkit()" class="text-slate-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div class="sidebar-content">
+                <div draggable="true" ondragstart="dragStart(event)" data-type="text" class="tool-item"><i data-lucide="type" class="text-blue-400"></i><span>Text</span></div>
+                <div draggable="true" ondragstart="dragStart(event)" data-type="button" class="tool-item"><i data-lucide="mouse-pointer" class="text-green-400"></i><span>Button</span></div>
+                <div draggable="true" ondragstart="dragStart(event)" data-type="image" class="tool-item"><i data-lucide="image" class="text-purple-400"></i><span>Image</span></div>
+                <div draggable="true" ondragstart="dragStart(event)" data-type="box" class="tool-item"><i data-lucide="square" class="text-orange-400"></i><span>Div Box</span></div>
+                <div draggable="true" ondragstart="dragStart(event)" data-type="circle" class="tool-item"><i data-lucide="circle" class="text-pink-400"></i><span>Circle</span></div>
+                <div draggable="true" ondragstart="dragStart(event)" data-type="input" class="tool-item"><i data-lucide="text-cursor-input" class="text-yellow-400"></i><span>Input</span></div>
+                <div draggable="true" ondragstart="dragStart(event)" data-type="card" class="tool-item"><i data-lucide="layout" class="text-teal-400"></i><span>Card</span></div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main id="workspace" onclick="deselectAll(event)">
+            <div id="canvas" ondragover="allowDrop(event)" ondrop="dropElement(event)"></div>
+        </main>
+
+        <!-- Properties Panel -->
+        <aside id="properties">
+            <div class="p-4 border-b border-white/5 flex justify-between items-center bg-slate-950">
+                <span class="text-xs font-bold uppercase text-slate-400">Edit Element</span>
+                <button onclick="closePanel()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 space-y-6">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Content / Value</label>
+                    <textarea id="prop-content" rows="2" class="prop-input"></textarea>
+                </div>
+                <div id="btn-settings" class="hidden p-3 bg-green-500/5 rounded-xl border border-green-500/10 space-y-3">
+                    <p class="text-[10px] font-bold text-green-500 uppercase">Button Link</p>
+                    <input type="text" id="prop-href" class="prop-input" placeholder="URL (https://...)">
+                    <select id="prop-target" class="prop-select">
+                        <option value="_self">Open in Same Tab</option>
+                        <option value="_blank">Open in New Tab</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Font Family</label>
+                    <select id="prop-font" class="prop-select">
+                        <option value="'Poppins', sans-serif">Poppins</option>
+                        <option value="'Roboto', sans-serif">Roboto</option>
+                        <option value="'Montserrat', sans-serif">Montserrat</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-[10px] font-bold text-slate-500 uppercase">Width</label><input type="number" id="prop-w" class="prop-input"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500 uppercase">Height</label><input type="number" id="prop-h" class="prop-input"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-[10px] font-bold text-slate-500 uppercase">Text Color</label><input type="color" id="prop-color" class="prop-input h-10 p-1"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500 uppercase">Background</label><input type="color" id="prop-bg" class="prop-input h-10 p-1"></div>
+                </div>
+                <div><label class="text-[10px] font-bold text-slate-500 uppercase">Border Radius</label><input type="number" id="prop-radius" class="prop-input"></div>
+                <div class="pt-4 border-t border-white/5 space-y-2">
+                    <button onclick="changeZ(10)" class="w-full bg-slate-800 py-2 rounded-lg text-xs font-bold">Bring Forward</button>
+                    <button onclick="changeZ(-10)" class="w-full bg-slate-800 py-2 rounded-lg text-xs font-bold">Send Backward</button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const canvas = document.getElementById('canvas');
+        const propertiesPanel = document.getElementById('properties');
+        const toolkitSidebar = document.getElementById('toolkit-sidebar');
+        const settingsModal = document.getElementById('page-settings-modal');
+        let selectedElement = null;
+        let zIndexCounter = 1000;
+
+        function toggleToolkit() { toolkitSidebar.classList.toggle('open'); }
+        function togglePageSettings() { settingsModal.style.display = (settingsModal.style.display === 'flex') ? 'none' : 'flex'; }
+        function closePanel() { propertiesPanel.style.display = 'none'; }
+
+        function initProject(type) {
+            if(type === 'mobile') { canvas.style.width = '375px'; canvas.style.height = '667px'; }
+            else if(type === 'tablet') { canvas.style.width = '700px'; canvas.style.height = '900px'; }
+            else if(type === 'desktop') { canvas.style.width = '1200px'; canvas.style.height = '750px'; }
+            else { canvas.style.width = '900px'; canvas.style.height = '600px'; }
+            document.getElementById('setup-modal').style.display = 'none';
+        }
+
+        function dragStart(e) { e.dataTransfer.setData("type", e.target.getAttribute('data-type')); }
+        function allowDrop(e) { e.preventDefault(); }
+        function dropElement(e) {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            createWidget(e.dataTransfer.getData("type"), e.clientX - rect.left, e.clientY - rect.top);
+        }
+
+        function createWidget(type, x, y) {
+            const el = document.createElement('div');
+            el.className = 'builder-element';
+            el.style.left = x + 'px'; el.style.top = y + 'px';
+            el.style.zIndex = ++zIndexCounter;
+            el.setAttribute('data-type', type);
+
+            let inner = '';
+            let sw=200, sh=50;
+
+            if(type === 'text') inner = `<div class="element-content text-black text-xl font-bold">Double Click to Edit</div>`;
+            else if(type === 'button') { inner = `<a href="#" class="element-content bg-green-600 text-white px-6 rounded-lg font-bold">New Button</a>`; sw=150; sh=45; }
+            else if(type === 'image') { inner = `<img src="https://via.placeholder.com/300" class="element-content object-cover rounded-lg">`; sw=250; sh=150; }
+            else if(type === 'box') { inner = `<div class="element-content border border-slate-300 rounded-md"></div>`; sw=150; sh=150; }
+            else if(type === 'circle') { inner = `<div class="element-content bg-blue-500 rounded-full"></div>`; sw=100; sh=100; }
+            else if(type === 'input') { inner = `<input placeholder="Enter text..." class="element-content border border-slate-300 rounded-lg px-4 text-black">`; sw=250; sh=45; }
+            else if(type === 'card') { inner = `<div class="element-content bg-white border border-slate-200 rounded-2xl p-4 flex flex-col shadow-sm"><div class="w-full h-20 bg-slate-100 rounded-xl mb-2"></div><div class="h-3 w-3/4 bg-slate-200 rounded"></div></div>`; sw=200; sh=240; }
+
+            el.innerHTML = `
+                <div class="element-controls">
+                    <div class="control-btn btn-copy" onclick="duplicateEl(event, this.parentElement.parentElement)"><i data-lucide="copy" class="w-4 h-4"></i></div>
+                    <div class="control-btn btn-edit" onclick="openSidebar(event, this.parentElement.parentElement)"><i data-lucide="pencil" class="w-4 h-4"></i></div>
+                    <div class="control-btn btn-del" onclick="deleteEl(event, this.parentElement.parentElement)"><i data-lucide="trash-2" class="w-4 h-4"></i></div>
+                </div>
+                ${inner}
+                <div class="resizer"></div>
+            `;
+
+            el.style.width = sw + 'px'; el.style.height = sh + 'px';
+
+            el.addEventListener('mousedown', (e) => {
+                if(e.target.closest('.element-controls') || e.target.classList.contains('resizer')) return;
+                selectElement(el);
+                startDrag(e, el);
+            });
+
+            el.querySelector('.resizer').addEventListener('mousedown', (e) => { e.stopPropagation(); startResize(e, el); });
+            canvas.appendChild(el);
+            lucide.createIcons();
+            selectElement(el);
+        }
+
+        function selectElement(el) {
+            if(selectedElement) selectedElement.classList.remove('selected');
+            selectedElement = el;
+            selectedElement.classList.add('selected');
+        }
+
+        function deselectAll(e) {
+            if(e.target.id === 'workspace' || e.target.id === 'canvas') {
+                if(selectedElement) selectedElement.classList.remove('selected');
+                selectedElement = null;
+                propertiesPanel.style.display = 'none';
+            }
+        }
+
+        function openSidebar(e, el) {
+            e.stopPropagation();
+            selectElement(el);
+            propertiesPanel.style.display = 'flex';
+            syncInputs();
+        }
+
+        function deleteEl(e, el) {
+            e.stopPropagation();
+            el.remove();
+            propertiesPanel.style.display = 'none';
+        }
+
+        function syncInputs() {
+            if(!selectedElement) return;
+            const content = selectedElement.querySelector('.element-content');
+            const type = selectedElement.getAttribute('data-type');
+            document.getElementById('prop-w').value = parseInt(selectedElement.style.width);
+            document.getElementById('prop-h').value = parseInt(selectedElement.style.height);
+            document.getElementById('btn-settings').style.display = (type === 'button') ? 'block' : 'none';
+            if(type === 'button') {
+                document.getElementById('prop-href').value = content.getAttribute('href') || '#';
+                document.getElementById('prop-target').value = content.getAttribute('target') || '_self';
+            }
+        }
+
+        function duplicateEl(e, el) {
+            e.stopPropagation();
+            const clone = el.cloneNode(true);
+            clone.style.left = (parseInt(el.style.left) + 20) + 'px';
+            clone.style.top = (parseInt(el.style.top) + 20) + 'px';
+            clone.style.zIndex = ++zIndexCounter;
+            clone.classList.remove('selected');
+            clone.addEventListener('mousedown', (e) => {
+                if(e.target.closest('.element-controls') || e.target.classList.contains('resizer')) return;
+                selectElement(clone);
+                startDrag(e, clone);
+            });
+            clone.querySelector('.resizer').addEventListener('mousedown', (e) => { e.stopPropagation(); startResize(e, clone); });
+            canvas.appendChild(clone);
+            selectElement(clone);
+            lucide.createIcons();
+        }
+
+        ['prop-w', 'prop-h', 'prop-bg', 'prop-color', 'prop-radius', 'prop-font', 'prop-href', 'prop-target'].forEach(id => {
+            document.getElementById(id).addEventListener('input', (e) => {
+                if(!selectedElement) return;
+                const v = e.target.value;
+                const target = selectedElement.querySelector('.element-content');
+                if(id === 'prop-w') selectedElement.style.width = v + 'px';
+                if(id === 'prop-h') selectedElement.style.height = v + 'px';
+                if(id === 'prop-bg') target.style.backgroundColor = v;
+                if(id === 'prop-color') target.style.color = v;
+                if(id === 'prop-radius') target.style.borderRadius = v + 'px';
+                if(id === 'prop-font') target.style.fontFamily = v;
+                if(id === 'prop-href' && target.tagName === 'A') target.setAttribute('href', v);
+                if(id === 'prop-target' && target.tagName === 'A') target.setAttribute('target', v);
+            });
+        });
+
+        document.getElementById('prop-content').addEventListener('input', (e) => {
+            if(!selectedElement) return;
+            const target = selectedElement.querySelector('.element-content');
+            if(target.tagName === 'IMG') target.src = e.target.value;
+            else if(target.tagName === 'INPUT') target.placeholder = e.target.value;
+            else target.innerText = e.target.value;
+        });
+
+        function changeZ(v) { if(selectedElement) selectedElement.style.zIndex = parseInt(selectedElement.style.zIndex) + v; }
+
+        function startDrag(e, el) {
+            const ox = e.clientX - el.offsetLeft, oy = e.clientY - el.offsetTop;
+            const move = (e) => { el.style.left = (e.clientX - ox) + 'px'; el.style.top = (e.clientY - oy) + 'px'; };
+            window.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', () => window.removeEventListener('mousemove', move), {once:true});
+        }
+
+        function startResize(e, el) {
+            const sw = el.offsetWidth, sh = el.offsetHeight, sx = e.clientX, sy = e.clientY;
+            const resize = (e) => { el.style.width = (sw + e.clientX - sx) + 'px'; el.style.height = (sh + e.clientY - sy) + 'px'; };
+            window.addEventListener('mousemove', resize);
+            window.addEventListener('mouseup', () => window.removeEventListener('mousemove', resize), {once:true});
+        }
+
+        function exportCode() {
+            const clone = canvas.cloneNode(true);
+            clone.querySelectorAll('.element-controls, .resizer').forEach(e => e.remove());
+            clone.querySelectorAll('.builder-element').forEach(el => {
+                el.classList.remove('selected');
+                el.style.border = 'none';
+                const content = el.querySelector('.element-content');
+                if(content) content.style.pointerEvents = 'auto';
+            });
+
+            const w = canvas.offsetWidth;
+            const mode = document.getElementById('setting-scale-mode').value;
+            const pageBg = document.getElementById('setting-page-bg').value;
+            
+            let scaleScript = "";
+            if(mode === 'scale') {
+                scaleScript = `
+                <script>
+                    function scaleCanvas() {
+                        const baseW = ${w};
+                        const s = window.innerWidth / baseW;
+                        if(window.innerWidth > 600) {
+                            document.querySelector('.exported-canvas').style.transform = 'scale(' + s + ')';
+                            document.querySelector('.exported-canvas').style.transformOrigin = 'top center';
+                        }
+                    }
+                    window.onresize = scaleCanvas; scaleCanvas();
+                <\/script>`;
+            }
+
+            const finalHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Exported Design</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <style>
+        body { margin: 0; background: ${pageBg}; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; }
+        .exported-canvas { 
+            position: relative; 
+            width: ${w}px; 
+            height: ${canvas.offsetHeight}px; 
+            background: ${window.getComputedStyle(canvas).backgroundColor}; 
+            overflow: hidden; flex-shrink: 0;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .builder-element { position: absolute; display: flex; }
+        .element-content { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="exported-canvas">${clone.innerHTML}</div>
+    ${scaleScript}
+</body>
+</html>`;
+
+            const blob = new Blob([finalHtml], { type: 'text/html' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'exported-web-design.html';
+            a.click();
+        }
+    </script>
+</body>
+</html>
