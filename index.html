@@ -1,21 +1,21 @@
-<!-- START OF FILE index.html -->
+<!-- START OF FILE studio_pro_v3.html -->
 <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudioPro Elite - Final Corrected</title>
+    <title>StudioPro Elite - Final V3 (Group & Lock)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Roboto:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --accent: #3b82f6; /* Illustrator Blue */
+            --accent: #3b82f6; 
             --bg-dark: #1e1e1e; 
             --panel-bg: #262626;
             --border: #3f3f46;
-            --guide-color: #ff00ff; /* Pink Smart Guide */
+            --guide-color: #ff00ff;
         }
 
         body { 
@@ -27,7 +27,7 @@
             user-select: none;
         }
 
-        /* --- Toolbar (Left) --- */
+        /* --- Toolbar --- */
         #toolkit-sidebar { 
             width: 50px; position: fixed; left: 0; top: 50px; bottom: 0; 
             z-index: 2000; background: var(--panel-bg); border-right: 1px solid var(--border);
@@ -43,7 +43,6 @@
         .tool-item:hover { background: #3f3f46; color: white; }
         .tool-item:active { cursor: grabbing; }
         
-        /* Tooltip */
         .tool-item::after {
             content: attr(data-label); position: absolute; left: 45px; 
             background: black; color: white; padding: 4px 8px; font-size: 10px; 
@@ -52,7 +51,7 @@
         }
         .tool-item:hover::after { opacity: 1; }
 
-        /* --- Properties Panel (Right) --- */
+        /* --- Properties Panel --- */
         #properties {
             width: 280px; background: var(--panel-bg); border-left: 1px solid var(--border);
             position: fixed; right: -280px; top: 50px; bottom: 0; z-index: 2000; 
@@ -69,7 +68,6 @@
             color: white; padding: 6px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 6px;
         }
         .prop-input:focus { border-color: var(--accent); outline: none; }
-        
         .prop-row { display: flex; gap: 8px; }
 
         /* --- Workspace --- */
@@ -97,7 +95,7 @@
         /* --- Smart Guides --- */
         #guide-layer {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none; z-index: 9999; overflow: hidden;
+            pointer-events: none; z-index: 99999; overflow: hidden;
         }
         .guide-line { position: absolute; background-color: var(--guide-color); pointer-events: none; }
         .guide-v { width: 1px; height: 100%; top: 0; border-left: 1px dashed var(--guide-color); background: transparent; }
@@ -105,21 +103,32 @@
 
         /* --- Elements --- */
         .builder-element { position: absolute; cursor: move; box-sizing: border-box; border: 1px solid transparent; }
-        .builder-element.selected { border: 1px solid var(--accent); z-index: 1000 !important; }
+        
+        /* FIX: No Z-Index change on selected, just border */
+        .builder-element.selected { border: 1px solid var(--accent); }
+        .builder-element.locked.selected { border: 1px solid #ef4444; cursor: not-allowed; }
 
-        /* Floating Element Controls */
+        /* Floating Element Controls - Always on top */
         .element-controls {
             position: absolute; top: -45px; left: 50%; transform: translateX(-50%);
             background: #18181b; padding: 4px; border-radius: 8px; display: none; gap: 4px;
-            border: 1px solid #3f3f46; pointer-events: auto; z-index: 1001;
+            border: 1px solid #3f3f46; pointer-events: auto; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            z-index: 9999999 !important; /* Critical: Controls always visible */
         }
         .selected .element-controls { display: flex; }
+
+        /* Hide specific controls when locked */
+        .locked .element-controls .btn-resize, 
+        .locked .element-controls .btn-copy,
+        .locked .resizer { display: none !important; }
 
         .control-btn {
             width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
             border-radius: 6px; cursor: pointer; transition: 0.2s; color: white;
         }
+        .btn-lock { background: #f59e0b; }
+        .locked .btn-lock { background: #ef4444; }
         .btn-copy { background: #6366f1; }
         .btn-edit { background: var(--accent); } 
         .btn-del { background: #ef4444; }
@@ -128,7 +137,7 @@
         .resizer {
             width: 10px; height: 10px; background: white; border: 1px solid var(--accent);
             position: absolute; bottom: -5px; right: -5px; cursor: se-resize; display: none;
-            z-index: 1002;
+            z-index: 9999999;
         }
         .selected .resizer { display: block; }
 
@@ -140,8 +149,12 @@
         #zoom-info {
             position: fixed; bottom: 15px; left: 65px;
             background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 4px;
-            font-size: 11px; color: #aaa; pointer-events: none;
-            border: 1px solid #333;
+            font-size: 11px; color: #aaa; pointer-events: none; border: 1px solid #333;
+        }
+        #shortcut-info {
+            position: fixed; bottom: 15px; right: 15px;
+            background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 4px;
+            font-size: 11px; color: #aaa; pointer-events: none; border: 1px solid #333; text-align: right;
         }
 
         /* Modals */
@@ -188,12 +201,10 @@
         </div>
     </div>
 
-    <!-- Global Settings (RESTORED MISSING SETTINGS) -->
+    <!-- Global Settings -->
     <div id="page-settings-modal">
         <div class="bg-[#262626] p-8 rounded-xl border border-[#3f3f46] w-96 text-center">
             <h2 class="text-xl font-bold mb-6 text-blue-500">Project Config</h2>
-            
-            <!-- Restored Scaling Option -->
             <div class="text-left mb-4">
                 <label class="prop-title">View Mode (Export)</label>
                 <select id="setting-scale-mode" class="prop-select">
@@ -201,13 +212,10 @@
                     <option value="scale">Auto-Fit to Screen</option>
                 </select>
             </div>
-
-            <!-- Background Color -->
             <div class="text-left mb-4">
                 <label class="prop-title">Background Color</label>
                 <input type="color" id="setting-page-bg" class="prop-input h-10 p-1" value="#ffffff">
             </div>
-
             <button onclick="togglePageSettings()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded font-bold mt-4">Close</button>
         </div>
     </div>
@@ -252,6 +260,11 @@
                 </div>
             </div>
             <div id="zoom-info">Shift + Drag to Pan</div>
+            <div id="shortcut-info">
+                Ctrl + Click : Multi Select<br>
+                Ctrl + G : Group Selection<br>
+                Shift + } : Bring Front
+            </div>
         </main>
 
         <!-- Properties Panel -->
@@ -261,72 +274,69 @@
                 <button onclick="closePanel()" class="text-red-500 hover:text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
             <div class="overflow-y-auto flex-1 pb-10">
+                <div class="prop-section text-center">
+                    <span id="selection-count" class="text-xs text-slate-400">No Item Selected</span>
+                </div>
                 
-                <div class="prop-section">
-                    <label class="prop-title text-yellow-500">Element ID</label>
-                    <input type="text" id="prop-id" class="prop-input font-mono text-yellow-400" placeholder="unique_id">
-                </div>
+                <div id="single-props">
+                    <div class="prop-section">
+                        <label class="prop-title text-yellow-500">Element ID</label>
+                        <input type="text" id="prop-id" class="prop-input font-mono text-yellow-400" placeholder="unique_id">
+                    </div>
 
-                <div class="prop-section">
-                    <label class="prop-title">Transform</label>
-                    <div class="prop-row">
-                        <div><span class="text-[9px] text-gray-500">W</span><input type="number" id="prop-w" class="prop-input"></div>
-                        <div><span class="text-[9px] text-gray-500">H</span><input type="number" id="prop-h" class="prop-input"></div>
+                    <div class="prop-section">
+                        <label class="prop-title">Transform</label>
+                        <div class="prop-row">
+                            <div><span class="text-[9px] text-gray-500">W</span><input type="number" id="prop-w" class="prop-input"></div>
+                            <div><span class="text-[9px] text-gray-500">H</span><input type="number" id="prop-h" class="prop-input"></div>
+                        </div>
+                    </div>
+
+                    <div class="prop-section">
+                        <label class="prop-title">Content & Style</label>
+                        <textarea id="prop-content" rows="3" class="prop-input" placeholder="Text content..."></textarea>
+                        <div class="prop-row mt-2">
+                            <div class="w-1/2">
+                                <label class="text-[10px] text-gray-500">Text Color</label>
+                                <input type="color" id="prop-color" class="w-full h-8 rounded bg-transparent border border-gray-600 cursor-pointer">
+                            </div>
+                            <div class="w-1/2">
+                                <label class="text-[10px] text-gray-500">Background</label>
+                                <input type="color" id="prop-bg" class="w-full h-8 rounded bg-transparent border border-gray-600 cursor-pointer">
+                            </div>
+                        </div>
+                        <label class="text-[10px] text-gray-500 mt-2 block">Font Family</label>
+                        <select id="prop-font" class="prop-select">
+                            <option value="'Poppins', sans-serif">Poppins</option>
+                            <option value="'Roboto', sans-serif">Roboto</option>
+                            <option value="'Montserrat', sans-serif">Montserrat</option>
+                            <option value="'Open Sans', sans-serif">Open Sans</option>
+                            <option value="serif">Serif</option>
+                            <option value="monospace">Monospace</option>
+                        </select>
+                    </div>
+
+                    <div class="prop-section">
+                        <label class="prop-title">Decorations</label>
+                        <label class="text-[10px] text-gray-500">Border Radius</label>
+                        <input type="number" id="prop-radius" class="prop-input">
+                    </div>
+
+                    <div id="btn-settings" class="prop-section hidden">
+                        <label class="prop-title text-blue-500">Link Actions</label>
+                        <input type="text" id="prop-href" class="prop-input" placeholder="#PageID or https://...">
+                        <select id="prop-target" class="prop-select">
+                            <option value="_self">Same Tab</option>
+                            <option value="_blank">New Tab</option>
+                        </select>
                     </div>
                 </div>
 
                 <div class="prop-section">
-                    <label class="prop-title">Content & Style</label>
-                    
-                    <label class="text-[10px] text-gray-500 mt-2 block">Text / URL / Placeholder</label>
-                    <textarea id="prop-content" rows="3" class="prop-input"></textarea>
-
-                    <div class="prop-row mt-2">
-                        <div class="w-1/2">
-                            <label class="text-[10px] text-gray-500">Text Color</label>
-                            <div class="flex gap-1">
-                                <input type="color" id="prop-color" class="w-8 h-8 rounded bg-transparent border border-gray-600 cursor-pointer">
-                            </div>
-                        </div>
-                        <div class="w-1/2">
-                            <label class="text-[10px] text-gray-500">Background</label>
-                            <div class="flex gap-1">
-                                <input type="color" id="prop-bg" class="w-8 h-8 rounded bg-transparent border border-gray-600 cursor-pointer">
-                            </div>
-                        </div>
-                    </div>
-
-                    <label class="text-[10px] text-gray-500 mt-2 block">Font Family</label>
-                    <select id="prop-font" class="prop-select">
-                        <option value="'Poppins', sans-serif">Poppins</option>
-                        <option value="'Roboto', sans-serif">Roboto</option>
-                        <option value="'Montserrat', sans-serif">Montserrat</option>
-                        <option value="'Open Sans', sans-serif">Open Sans</option>
-                        <option value="serif">Serif</option>
-                        <option value="monospace">Monospace</option>
-                    </select>
-                </div>
-
-                <div class="prop-section">
-                    <label class="prop-title">Decorations</label>
-                    <label class="text-[10px] text-gray-500">Border Radius</label>
-                    <input type="number" id="prop-radius" class="prop-input">
-                </div>
-
-                <div id="btn-settings" class="prop-section hidden">
-                    <label class="prop-title text-blue-500">Link Actions</label>
-                    <input type="text" id="prop-href" class="prop-input" placeholder="#PageID or https://...">
-                    <select id="prop-target" class="prop-select">
-                        <option value="_self">Same Tab</option>
-                        <option value="_blank">New Tab</option>
-                    </select>
-                </div>
-
-                <div class="prop-section">
-                    <label class="prop-title">Layer</label>
-                    <div class="flex gap-2">
-                        <button onclick="changeZ(1)" class="w-1/2 bg-[#3f3f46] py-1 rounded text-[10px] hover:bg-white hover:text-black">Forward</button>
-                        <button onclick="changeZ(-1)" class="w-1/2 bg-[#3f3f46] py-1 rounded text-[10px] hover:bg-white hover:text-black">Backward</button>
+                    <label class="prop-title">Layer (Z-Index)</label>
+                    <div class="flex gap-2 mb-2">
+                        <button onclick="changeZ(1)" class="w-1/2 bg-[#3f3f46] py-1 rounded text-[10px] hover:bg-white hover:text-black">Bring Forward</button>
+                        <button onclick="changeZ(-1)" class="w-1/2 bg-[#3f3f46] py-1 rounded text-[10px] hover:bg-white hover:text-black">Send Backward</button>
                     </div>
                 </div>
             </div>
@@ -342,9 +352,36 @@
         
         let pages = [];
         let currentPageId = null;
-        let selectedElement = null;
-        let zIndexCounter = 1000;
+        let selectedElements = []; // Changed from single to array
+        let zIndexCounter = 100;
         let viewState = { scale: 1, panX: 0, panY: 0, isPanning: false, startX: 0, startY: 0 };
+
+        // --- KEYBOARD SHORTCUTS ---
+        window.addEventListener('keydown', (e) => {
+            if (selectedElements.length === 0) return;
+            
+            // SHIFT + } (Bring Forward)
+            if (e.shiftKey && (e.key === '}' || e.key === ']' || e.code === 'BracketRight')) {
+                e.preventDefault();
+                changeZ(1);
+            }
+            // SHIFT + { (Send Backward)
+            if (e.shiftKey && (e.key === '{' || e.key === '[' || e.code === 'BracketLeft')) {
+                e.preventDefault();
+                changeZ(-1);
+            }
+            // Delete
+            if(e.key === 'Delete') {
+                selectedElements.forEach(el => el.remove());
+                selectedElements = [];
+                closePanel();
+            }
+            // Group (Ctrl + G)
+            if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') {
+                e.preventDefault();
+                groupSelection();
+            }
+        });
 
         // --- GLOBAL PAN & ZOOM ---
         function startPan(e) {
@@ -403,7 +440,9 @@
             const modal = document.getElementById('page-settings-modal');
             modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
         }
-        function closePanel() { propertiesPanel.classList.remove('open'); }
+        function closePanel() { 
+            propertiesPanel.classList.remove('open'); 
+        }
         function openSidebar() { propertiesPanel.classList.add('open'); syncInputs(); }
 
         function renderPageList() {
@@ -420,11 +459,11 @@
         }
 
         function saveCurrentPage() {
-            document.getElementById('guide-layer').innerHTML = '';
+            document.querySelectorAll('.guide-line').forEach(g => g.remove());
             const page = pages.find(p => p.id === currentPageId);
             if(page) page.content = canvas.innerHTML;
-            if(!canvas.querySelector('#guide-layer')) canvas.appendChild(document.createElement('div')).id = 'guide-layer';
         }
+
         function addNewPage() {
             const name = document.getElementById('new-page-name').value.trim() || `Page ${pages.length + 1}`;
             saveCurrentPage();
@@ -433,6 +472,7 @@
             switchPage(newPage.id);
             document.getElementById('new-page-name').value = '';
         }
+
         function switchPage(id) {
             if(id === currentPageId) return;
             saveCurrentPage();
@@ -440,7 +480,7 @@
             currentPageId = id;
             const page = pages.find(p => p.id === id);
             canvas.innerHTML = page.content;
-            if(!document.getElementById('guide-layer')) canvas.appendChild(document.createElement('div')).id = 'guide-layer';
+            if(!canvas.querySelector('#guide-layer')) canvas.appendChild(document.createElement('div')).id = 'guide-layer';
             rehydrateElements();
             renderPageList();
         }
@@ -457,10 +497,16 @@
         }
 
         function createWidget(type, x, y) {
+            const elements = document.querySelectorAll('.builder-element');
+            elements.forEach(el => {
+                const z = parseInt(el.style.zIndex || 0);
+                if(z >= zIndexCounter) zIndexCounter = z + 1;
+            });
+
             const el = document.createElement('div');
             el.className = 'builder-element';
             el.style.left = x + 'px'; el.style.top = y + 'px';
-            el.style.zIndex = ++zIndexCounter;
+            el.style.zIndex = zIndexCounter++;
             el.setAttribute('data-type', type);
             el.id = type + '_' + Math.random().toString(36).substr(2, 5);
 
@@ -475,8 +521,9 @@
 
             el.innerHTML = `
                 <div class="element-controls">
+                    <div class="control-btn btn-lock" title="Lock/Unlock"><i data-lucide="lock" class="w-4 h-4"></i></div>
                     <div class="control-btn btn-copy" title="Duplicate"><i data-lucide="copy" class="w-4 h-4"></i></div>
-                    <div class="control-btn btn-edit" title="Edit Properties"><i data-lucide="pencil" class="w-4 h-4"></i></div>
+                    <div class="control-btn btn-edit" title="Properties"><i data-lucide="pencil" class="w-4 h-4"></i></div>
                     <div class="control-btn btn-del" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></div>
                 </div>
                 ${inner}
@@ -486,15 +533,17 @@
             attachListeners(el);
             canvas.appendChild(el);
             lucide.createIcons();
-            selectElement(el);
+            selectElement(el, false);
         }
 
-        // --- INTERACTION ---
+        // --- INTERACTION & GROUP LOGIC ---
         function attachListeners(el) {
+            const btnLock = el.querySelector('.btn-lock');
             const btnCopy = el.querySelector('.btn-copy');
             const btnEdit = el.querySelector('.btn-edit');
             const btnDel = el.querySelector('.btn-del');
 
+            if(btnLock) btnLock.addEventListener('mousedown', (e) => toggleLock(e, el));
             if(btnCopy) btnCopy.addEventListener('mousedown', (e) => duplicateEl(e, el));
             if(btnEdit) btnEdit.addEventListener('mousedown', (e) => { e.stopPropagation(); openSidebar(); });
             if(btnDel) btnDel.addEventListener('mousedown', (e) => deleteEl(e, el));
@@ -502,82 +551,180 @@
             el.addEventListener('mousedown', (e) => {
                 if(e.shiftKey) { startPan(e); return; }
                 if(e.target.closest('.element-controls') || e.target.classList.contains('resizer')) return;
+                
                 e.stopPropagation();
-                selectElement(el); 
-                startMove(e, el);
+                
+                // Multi Select Logic
+                const isMulti = e.ctrlKey || e.metaKey;
+                selectElement(el, isMulti);
+                
+                // If not locked, start move
+                if(!el.classList.contains('locked')) {
+                    startMove(e, el);
+                }
             });
 
             const resizer = el.querySelector('.resizer');
-            if(resizer) resizer.addEventListener('mousedown', (e) => { e.stopPropagation(); startResize(e, el); });
+            if(resizer) resizer.addEventListener('mousedown', (e) => { 
+                e.stopPropagation(); 
+                if(!el.classList.contains('locked')) startResize(e, el); 
+            });
         }
-        function rehydrateElements() { canvas.querySelectorAll('.builder-element').forEach(el => attachListeners(el)); lucide.createIcons(); }
-        function selectElement(el) { if(selectedElement) selectedElement.classList.remove('selected'); selectedElement = el; selectedElement.classList.add('selected'); syncInputs(); }
-        function deselectAll(e) { if(e.target.id === 'workspace' || e.target.id === 'canvas' || e.target.id === 'zoom-wrapper') { if(selectedElement) selectedElement.classList.remove('selected'); selectedElement = null; closePanel(); } }
-        function deleteEl(e, el) { e.stopPropagation(); el.remove(); closePanel(); }
-        function duplicateEl(e, el) { e.stopPropagation(); const clone = el.cloneNode(true); clone.id = el.getAttribute('data-type') + '_' + Math.random().toString(36).substr(2, 5); clone.style.left = (parseFloat(el.style.left)+20)+'px'; clone.style.top = (parseFloat(el.style.top)+20)+'px'; clone.style.zIndex = ++zIndexCounter; clone.classList.remove('selected'); attachListeners(clone); canvas.appendChild(clone); selectElement(clone); lucide.createIcons(); }
 
-        // --- SMART SNAPPING ---
+        function toggleLock(e, el) {
+            e.stopPropagation();
+            el.classList.toggle('locked');
+            const icon = el.querySelector('.btn-lock i');
+            // Visual toggle (using Lucide classes re-render or just simple class switch if icon swap needed)
+            // Ideally we re-render icon, but simple color change via CSS is handled.
+            selectElement(el, false); // re-trigger selection to update UI
+        }
+
+        function rehydrateElements() { canvas.querySelectorAll('.builder-element').forEach(el => attachListeners(el)); lucide.createIcons(); }
+        
+        // --- SELECTION LOGIC ---
+        function selectElement(el, multi) {
+            // Check for Group ID
+            const groupId = el.getAttribute('data-group');
+            let elementsToSelect = [el];
+            
+            // If part of a group, select all peers
+            if(groupId) {
+                elementsToSelect = Array.from(document.querySelectorAll(`.builder-element[data-group="${groupId}"]`));
+            }
+
+            if (!multi) {
+                // Clear previous
+                selectedElements.forEach(item => item.classList.remove('selected'));
+                selectedElements = [];
+                // Add new
+                elementsToSelect.forEach(item => {
+                    selectedElements.push(item);
+                    item.classList.add('selected');
+                });
+            } else {
+                // Toggle selection
+                elementsToSelect.forEach(item => {
+                    if(selectedElements.includes(item)) {
+                        item.classList.remove('selected');
+                        selectedElements = selectedElements.filter(x => x !== item);
+                    } else {
+                        selectedElements.push(item);
+                        item.classList.add('selected');
+                    }
+                });
+            }
+            
+            updateUIState();
+        }
+
+        function deselectAll(e) { 
+            if(e.target.id === 'workspace' || e.target.id === 'canvas' || e.target.id === 'zoom-wrapper') { 
+                selectedElements.forEach(item => item.classList.remove('selected'));
+                selectedElements = [];
+                closePanel();
+                updateUIState();
+            } 
+        }
+
+        function updateUIState() {
+            const count = selectedElements.length;
+            document.getElementById('selection-count').innerText = count > 0 ? `${count} Item(s) Selected` : "No Item Selected";
+            
+            if(count === 1) {
+                document.getElementById('single-props').classList.remove('hidden');
+                syncInputs(); // Sync the single selected item
+                openSidebar();
+            } else {
+                document.getElementById('single-props').classList.add('hidden');
+                if(count > 0) openSidebar(); else closePanel();
+            }
+        }
+
+        function groupSelection() {
+            if(selectedElements.length < 2) return;
+            const groupId = 'g_' + Date.now();
+            selectedElements.forEach(el => el.setAttribute('data-group', groupId));
+            alert('Items Grouped!');
+        }
+
+        function deleteEl(e, el) { 
+            e.stopPropagation(); 
+            // If grouped, delete all
+            const groupId = el.getAttribute('data-group');
+            if(groupId) {
+                 document.querySelectorAll(`.builder-element[data-group="${groupId}"]`).forEach(g => g.remove());
+            } else {
+                el.remove(); 
+            }
+            selectedElements = [];
+            closePanel(); 
+        }
+        
+        function duplicateEl(e, el) { 
+            e.stopPropagation(); 
+            // If grouped, duplicate entire group logic is complex, for now duplicate single
+            // Simple duplication for single items
+            const clone = el.cloneNode(true); 
+            clone.id = el.getAttribute('data-type') + '_' + Math.random().toString(36).substr(2, 5); 
+            clone.style.left = (parseFloat(el.style.left)+20)+'px'; 
+            clone.style.top = (parseFloat(el.style.top)+20)+'px'; 
+            clone.style.zIndex = ++zIndexCounter; 
+            clone.classList.remove('selected', 'locked'); 
+            clone.removeAttribute('data-group'); // Don't clone group ID immediately
+            attachListeners(clone); 
+            canvas.appendChild(clone); 
+            selectElement(clone, false); 
+            lucide.createIcons(); 
+        }
+
+        // --- MOVING ELEMENTS (Multi-Move) ---
         function startMove(e, el) {
             const startX = e.clientX, startY = e.clientY;
-            const startLeft = parseFloat(el.style.left), startTop = parseFloat(el.style.top);
-            const w = el.offsetWidth, h = el.offsetHeight;
-            const targets = Array.from(canvas.querySelectorAll('.builder-element')).filter(x => x !== el).map(x => ({ l: x.offsetLeft, c: x.offsetLeft + x.offsetWidth/2, r: x.offsetLeft + x.offsetWidth, t: x.offsetTop, m: x.offsetTop + x.offsetHeight/2, b: x.offsetTop + x.offsetHeight }));
-            targets.push({l:0, c:canvas.offsetWidth/2, r:canvas.offsetWidth, t:0, m:canvas.offsetHeight/2, b:canvas.offsetHeight});
+            
+            // Store initial positions of ALL selected elements
+            const initialPositions = selectedElements.map(item => ({
+                el: item,
+                startX: parseFloat(item.style.left),
+                startY: parseFloat(item.style.top)
+            }));
 
-            const SNAP = 6;
             const move = (e) => {
                 const dx = (e.clientX - startX) / viewState.scale;
                 const dy = (e.clientY - startY) / viewState.scale;
-                let rawL = startLeft + dx, rawT = startTop + dy, finalL = rawL, finalT = rawT;
-                let snappedX = false, snappedY = false;
-                document.getElementById('guide-layer').innerHTML = '';
-
-                for(let t of targets) {
-                    if(!snappedX) {
-                        if(Math.abs(rawL - t.l) < SNAP) { finalL = t.l; snappedX=true; drawGuide('v', t.l); }
-                        else if(Math.abs(rawL - t.c) < SNAP) { finalL = t.c; snappedX=true; drawGuide('v', t.c); }
-                        else if(Math.abs(rawL - t.r) < SNAP) { finalL = t.r; snappedX=true; drawGuide('v', t.r); }
-                        else if(Math.abs((rawL+w) - t.l) < SNAP) { finalL = t.l-w; snappedX=true; drawGuide('v', t.l); }
-                        else if(Math.abs((rawL+w) - t.r) < SNAP) { finalL = t.r-w; snappedX=true; drawGuide('v', t.r); }
-                        else if(Math.abs((rawL+w/2) - t.c) < SNAP) { finalL = t.c-w/2; snappedX=true; drawGuide('v', t.c); }
-                    }
-                    if(!snappedY) {
-                        if(Math.abs(rawT - t.t) < SNAP) { finalT = t.t; snappedY=true; drawGuide('h', t.t); }
-                        else if(Math.abs(rawT - t.m) < SNAP) { finalT = t.m; snappedY=true; drawGuide('h', t.m); }
-                        else if(Math.abs(rawT - t.b) < SNAP) { finalT = t.b; snappedY=true; drawGuide('h', t.b); }
-                        else if(Math.abs((rawT+h) - t.t) < SNAP) { finalT = t.t-h; snappedY=true; drawGuide('h', t.t); }
-                        else if(Math.abs((rawT+h) - t.b) < SNAP) { finalT = t.b-h; snappedY=true; drawGuide('h', t.b); }
-                        else if(Math.abs((rawT+h/2) - t.m) < SNAP) { finalT = t.m-h/2; snappedY=true; drawGuide('h', t.m); }
-                    }
-                }
-                el.style.left = finalL + 'px'; el.style.top = finalT + 'px';
+                
+                initialPositions.forEach(p => {
+                    p.el.style.left = (p.startX + dx) + 'px';
+                    p.el.style.top = (p.startY + dy) + 'px';
+                });
             };
-            const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); document.getElementById('guide-layer').innerHTML = ''; };
-            window.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
-        }
 
-        function drawGuide(type, pos) {
-            const d = document.createElement('div');
-            d.className = `guide-line ${type === 'v' ? 'guide-v' : 'guide-h'}`;
-            if(type === 'v') d.style.left = pos + 'px'; else d.style.top = pos + 'px';
-            document.getElementById('guide-layer').appendChild(d);
+            const stop = () => { 
+                window.removeEventListener('mousemove', move); 
+                window.removeEventListener('mouseup', stop); 
+            };
+            window.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
         }
 
         function startResize(e, el) {
             const startX = e.clientX, startY = e.clientY, sw = el.offsetWidth, sh = el.offsetHeight;
-            const resize = (e) => { el.style.width = (sw + (e.clientX - startX) / viewState.scale) + 'px'; el.style.height = (sh + (e.clientY - startY) / viewState.scale) + 'px'; };
+            const resize = (e) => { 
+                el.style.width = (sw + (e.clientX - startX) / viewState.scale) + 'px'; 
+                el.style.height = (sh + (e.clientY - startY) / viewState.scale) + 'px'; 
+            };
             window.addEventListener('mousemove', resize); window.addEventListener('mouseup', () => window.removeEventListener('mousemove', resize), {once:true});
         }
 
         // --- PROPERTIES ---
         function syncInputs() {
-            if(!selectedElement) return;
-            const content = selectedElement.querySelector('.element-content');
-            const type = selectedElement.getAttribute('data-type');
+            if(selectedElements.length !== 1) return;
+            const el = selectedElements[0];
+            const content = el.querySelector('.element-content');
+            const type = el.getAttribute('data-type');
             
-            document.getElementById('prop-id').value = selectedElement.id;
-            document.getElementById('prop-w').value = parseInt(selectedElement.style.width);
-            document.getElementById('prop-h').value = parseInt(selectedElement.style.height);
+            document.getElementById('prop-id').value = el.id;
+            document.getElementById('prop-w').value = parseInt(el.style.width);
+            document.getElementById('prop-h').value = parseInt(el.style.height);
             
             if(type === 'image') document.getElementById('prop-content').value = content.src;
             else if(type === 'input') document.getElementById('prop-content').value = content.placeholder;
@@ -599,28 +746,34 @@
             }
         }
 
-        document.getElementById('prop-id').addEventListener('change', e => { if(selectedElement) selectedElement.id = e.target.value; });
-        ['prop-w', 'prop-h'].forEach(id => document.getElementById(id).addEventListener('input', e => { if(selectedElement) id==='prop-w' ? selectedElement.style.width = e.target.value+'px' : selectedElement.style.height = e.target.value+'px'; }));
-        document.getElementById('prop-bg').addEventListener('input', e => { if(selectedElement) selectedElement.querySelector('.element-content').style.backgroundColor = e.target.value; });
-        document.getElementById('prop-color').addEventListener('input', e => { if(selectedElement) selectedElement.querySelector('.element-content').style.color = e.target.value; });
-        document.getElementById('prop-radius').addEventListener('input', e => { if(selectedElement) selectedElement.querySelector('.element-content').style.borderRadius = e.target.value+'px'; });
-        document.getElementById('prop-font').addEventListener('change', e => { if(selectedElement) selectedElement.querySelector('.element-content').style.fontFamily = e.target.value; });
+        // Input listeners
+        document.getElementById('prop-id').addEventListener('change', e => { if(selectedElements.length===1) selectedElements[0].id = e.target.value; });
+        ['prop-w', 'prop-h'].forEach(id => document.getElementById(id).addEventListener('input', e => { 
+            if(selectedElements.length===1) id==='prop-w' ? selectedElements[0].style.width = e.target.value+'px' : selectedElements[0].style.height = e.target.value+'px'; 
+        }));
+        // Apply Color/BG/Font to ALL selected
+        document.getElementById('prop-bg').addEventListener('input', e => { selectedElements.forEach(el => el.querySelector('.element-content').style.backgroundColor = e.target.value); });
+        document.getElementById('prop-color').addEventListener('input', e => { selectedElements.forEach(el => el.querySelector('.element-content').style.color = e.target.value); });
+        document.getElementById('prop-radius').addEventListener('input', e => { selectedElements.forEach(el => el.querySelector('.element-content').style.borderRadius = e.target.value+'px'); });
+        document.getElementById('prop-font').addEventListener('change', e => { selectedElements.forEach(el => el.querySelector('.element-content').style.fontFamily = e.target.value); });
+        
         document.getElementById('prop-content').addEventListener('input', e => {
-            if(!selectedElement) return;
-            const c = selectedElement.querySelector('.element-content');
+            if(selectedElements.length !== 1) return;
+            const c = selectedElements[0].querySelector('.element-content');
             if(c.tagName === 'IMG') c.src = e.target.value; else if(c.tagName === 'INPUT') c.placeholder = e.target.value; else c.innerText = e.target.value;
         });
-        document.getElementById('prop-href').addEventListener('input', e => { if(selectedElement && selectedElement.querySelector('a')) selectedElement.querySelector('a').setAttribute('href', e.target.value); });
-        document.getElementById('prop-target').addEventListener('change', e => { if(selectedElement && selectedElement.querySelector('a')) selectedElement.querySelector('a').setAttribute('target', e.target.value); });
 
-        function changeZ(v) { if(selectedElement) selectedElement.style.zIndex = parseInt(selectedElement.style.zIndex) + v; }
+        function changeZ(v) { 
+            selectedElements.forEach(el => {
+                let currentZ = parseInt(el.style.zIndex || 0);
+                el.style.zIndex = currentZ + v;
+            });
+        }
         function rgbToHex(rgb) { if(!rgb || rgb==='rgba(0, 0, 0, 0)') return '#000000'; if(rgb.startsWith('#')) return rgb; const [r,g,b] = rgb.match(/\d+/g); return "#" + ((1 << 24) + (+r << 16) + (+g << 8) + +b).toString(16).slice(1); }
 
-        // --- EXPORT LOGIC (CORRECTED) ---
+        // --- EXPORT ---
         function exportCode() {
             saveCurrentPage();
-            if(document.getElementById('guide-layer')) document.getElementById('guide-layer').remove();
-            
             const scaleMode = document.getElementById('setting-scale-mode').value;
             const bg = document.getElementById('setting-page-bg').value;
             let allPagesHtml = '';
@@ -628,37 +781,33 @@
             pages.forEach((page, index) => {
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = page.content;
-                tempDiv.querySelectorAll('.element-controls, .resizer, #guide-layer').forEach(e => e.remove());
+                tempDiv.querySelectorAll('.element-controls, .resizer, .guide-line, #guide-layer').forEach(e => e.remove());
                 tempDiv.querySelectorAll('.builder-element').forEach(el => {
-                    el.classList.remove('selected'); el.style.border = 'none';
+                    el.classList.remove('selected', 'locked'); 
+                    el.style.border = 'none';
                     if(el.querySelector('.element-content')) el.querySelector('.element-content').style.pointerEvents = 'auto';
                 });
                 const safeName = page.name.replace(/\s+/g, '');
                 allPagesHtml += `<div id="${safeName}" class="spa-page" style="display: ${index===0?'block':'none'}; position: relative; width: 100%; height: 100%;">${tempDiv.innerHTML}</div>`;
             });
 
-            // Restore guide layer for editor
+            // Restore guide layer
             const g = document.createElement('div'); g.id = 'guide-layer'; canvas.appendChild(g);
 
-            // Auto-Scale Script for exported file
-            const scaleScript = scaleMode === 'scale' ? `
-            <script>
-                function resize() {
-                    const container = document.querySelector('.page-container');
-                    const cw = ${canvas.offsetWidth}, ch = ${canvas.offsetHeight};
-                    const ww = window.innerWidth, wh = window.innerHeight;
-                    const scale = Math.min(ww/cw, wh/ch);
-                    container.style.transform = 'scale('+scale+')';
-                    container.style.transformOrigin = 'top left';
-                    container.style.left = ((ww - cw*scale)/2) + 'px';
-                    container.style.top = ((wh - ch*scale)/2) + 'px';
-                    container.style.position = 'absolute';
-                }
-                window.addEventListener('resize', resize);
-                window.addEventListener('load', resize);
-            <\/script>` : '';
+            let bodyStyle = `margin:0;background:${bg};min-height:100vh;`;
+            let containerStyle = `position:relative;width:${canvas.offsetWidth}px;height:${canvas.offsetHeight}px;background:#fff;box-shadow:0 20px 50px rgba(0,0,0,0.5);overflow:hidden;`;
+            let extraScript = '';
 
-            const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Project</title><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Roboto:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com"><\/script><style>body{margin:0;background:${bg};display:flex;justify-content:center;min-height:100vh;overflow:${scaleMode==='scale'?'hidden':'auto'}}.page-container{position:relative;width:${canvas.offsetWidth}px;height:${canvas.offsetHeight}px;background:#fff;box-shadow:0 20px 50px rgba(0,0,0,0.5);overflow:hidden;${scaleMode==='fixed'?'margin-top:20px;':''}${canvas.style.borderRadius?`border-radius:${canvas.style.borderRadius}`:''}}.builder-element{position:absolute}.element-content{width:100%;height:100%;display:flex;align-items:center;justify-content:center;text-decoration:none}</style></head><body><div class="page-container">${allPagesHtml}</div><script>function navigateTo(p){document.querySelectorAll('.spa-page').forEach(e=>e.style.display='none');const t=document.getElementById(p);if(t)t.style.display='block'}document.addEventListener('click',e=>{if(e.target.tagName==='A'&&e.target.getAttribute('href').startsWith('#')){e.preventDefault();navigateTo(e.target.getAttribute('href').substring(1))}})<\/script>${scaleScript}</body></html>`;
+            if (scaleMode === 'fixed') {
+                bodyStyle += `display:flex;justify-content:center;align-items:center;padding:20px;box-sizing:border-box;`;
+                containerStyle += `flex-shrink:0;${canvas.style.borderRadius ? `border-radius:${canvas.style.borderRadius};` : ''}`;
+            } else if (scaleMode === 'scale') {
+                bodyStyle += `overflow:hidden;width:100vw;height:100vh;display:flex;justify-content:center;align-items:center;`;
+                containerStyle += `transform-origin: center center; position: absolute;`;
+                extraScript = `<script>function resize(){const c=document.querySelector('.page-container');if(!c)return;const cw=${canvas.offsetWidth},ch=${canvas.offsetHeight},ww=window.innerWidth,wh=window.innerHeight,s=Math.min(ww/cw,wh/ch);c.style.transform='scale('+s+')'}window.addEventListener('resize',resize);window.addEventListener('load',resize);<\/script>`;
+            }
+
+            const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Export</title><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Roboto:wght@400;700&display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com"><\/script><style>body{${bodyStyle}}.page-container{${containerStyle}}.builder-element{position:absolute}.element-content{width:100%;height:100%;display:flex;align-items:center;justify-content:center;text-decoration:none}</style></head><body><div class="page-container">${allPagesHtml}</div><script>function navigateTo(p){document.querySelectorAll('.spa-page').forEach(e=>e.style.display='none');const t=document.getElementById(p);if(t)t.style.display='block'}document.addEventListener('click',e=>{if(e.target.tagName==='A'&&e.target.getAttribute('href').startsWith('#')){e.preventDefault();navigateTo(e.target.getAttribute('href').substring(1))}})<\/script>${extraScript}</body></html>`;
             
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([html], {type: 'text/html'}));
