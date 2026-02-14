@@ -1,10 +1,10 @@
-<!-- START OF FILE studio_pro_v3.html -->
+<!-- START OF FILE: index.html (StudioPro Final) -->
 <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudioPro Elite - Final V3 (Group & Lock)</title>
+    <title>StudioPro Elite - Final V4 (Plugin System)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Roboto:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
@@ -43,6 +43,7 @@
         .tool-item:hover { background: #3f3f46; color: white; }
         .tool-item:active { cursor: grabbing; }
         
+        /* Tooltips */
         .tool-item::after {
             content: attr(data-label); position: absolute; left: 45px; 
             background: black; color: white; padding: 4px 8px; font-size: 10px; 
@@ -92,33 +93,42 @@
             box-shadow: 0 0 100px rgba(0,0,0,0.8);
         }
 
-        /* --- Smart Guides --- */
-        #guide-layer {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none; z-index: 99999; overflow: hidden;
+        /* --- PLUGIN WINDOW (NEW) --- */
+        #plugin-window {
+            position: fixed; top: 100px; left: 100px; width: 320px; height: 450px;
+            background: #262626; border: 1px solid #3f3f46; border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 5000;
+            display: none; flex-direction: column; resize: both; overflow: hidden;
         }
-        .guide-line { position: absolute; background-color: var(--guide-color); pointer-events: none; }
-        .guide-v { width: 1px; height: 100%; top: 0; border-left: 1px dashed var(--guide-color); background: transparent; }
-        .guide-h { height: 1px; width: 100%; left: 0; border-top: 1px dashed var(--guide-color); background: transparent; }
+        #plugin-header {
+            padding: 10px; background: #18181b; border-bottom: 1px solid #3f3f46;
+            cursor: move; display: flex; justify-content: space-between; align-items: center;
+        }
+        #plugin-body {
+            flex: 1; padding: 10px; overflow-y: auto; color: white;
+        }
+        /* Style for loaded items */
+        .plugin-item {
+            background: #3f3f46; padding: 10px; margin-bottom: 10px; border-radius: 6px;
+            cursor: grab; border: 1px solid transparent; transition: 0.2s; display: block;
+        }
+        .plugin-item:hover { border-color: var(--accent); background: #52525b; }
+        .plugin-item:active { cursor: grabbing; }
 
         /* --- Elements --- */
         .builder-element { position: absolute; cursor: move; box-sizing: border-box; border: 1px solid transparent; }
-        
-        /* FIX: No Z-Index change on selected, just border */
         .builder-element.selected { border: 1px solid var(--accent); }
         .builder-element.locked.selected { border: 1px solid #ef4444; cursor: not-allowed; }
 
-        /* Floating Element Controls - Always on top */
+        /* Floating Element Controls */
         .element-controls {
             position: absolute; top: -45px; left: 50%; transform: translateX(-50%);
             background: #18181b; padding: 4px; border-radius: 8px; display: none; gap: 4px;
             border: 1px solid #3f3f46; pointer-events: auto; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            z-index: 9999999 !important; /* Critical: Controls always visible */
+            z-index: 9999999 !important; 
         }
         .selected .element-controls { display: flex; }
-
-        /* Hide specific controls when locked */
         .locked .element-controls .btn-resize, 
         .locked .element-controls .btn-copy,
         .locked .resizer { display: none !important; }
@@ -146,16 +156,13 @@
             overflow: hidden; pointer-events: none;
         }
 
-        #zoom-info {
-            position: fixed; bottom: 15px; left: 65px;
+        #zoom-info, #shortcut-info {
+            position: fixed; bottom: 15px;
             background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 4px;
             font-size: 11px; color: #aaa; pointer-events: none; border: 1px solid #333;
         }
-        #shortcut-info {
-            position: fixed; bottom: 15px; right: 15px;
-            background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 4px;
-            font-size: 11px; color: #aaa; pointer-events: none; border: 1px solid #333; text-align: right;
-        }
+        #zoom-info { left: 65px; }
+        #shortcut-info { right: 15px; text-align: right; }
 
         /* Modals */
         #setup-modal, #page-settings-modal, #page-manager-modal { 
@@ -188,6 +195,29 @@
                     <i data-lucide="maximize" class="mx-auto mb-3 w-8 h-8 text-slate-500 group-hover:text-blue-500"></i>
                     <span class="text-xs font-bold uppercase text-white">Custom</span>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plugin Window (New) -->
+    <div id="plugin-window">
+        <div id="plugin-header">
+            <div class="flex items-center gap-2">
+                <i data-lucide="package" class="w-4 h-4 text-purple-400"></i>
+                <span class="text-xs font-bold text-white uppercase">Plugin Manager</span>
+            </div>
+            <button onclick="togglePluginWindow()" class="text-red-500 hover:text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="p-3 border-b border-[#3f3f46] bg-[#18181b]">
+            <input type="file" id="plugin-loader" accept=".html" class="hidden" onchange="loadPlugin(this)">
+            <label for="plugin-loader" class="flex items-center justify-center gap-2 w-full py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded cursor-pointer transition">
+                <i data-lucide="upload" class="w-3 h-3"></i> Load .html File
+            </label>
+        </div>
+        <div id="plugin-body">
+            <div class="h-full flex flex-col items-center justify-center text-gray-500 text-center p-4">
+                <i data-lucide="box" class="w-8 h-8 mb-2 opacity-30"></i>
+                <p class="text-xs">No plugin loaded.<br>Upload a file to see components.</p>
             </div>
         </div>
     </div>
@@ -230,6 +260,11 @@
             </button>
         </div>
         <div class="flex items-center gap-2">
+            <!-- New Plugin Button -->
+            <button onclick="togglePluginWindow()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded text-xs font-bold flex items-center gap-2 border border-purple-400/30 shadow-lg shadow-purple-900/20">
+                <i data-lucide="package-plus" class="w-3 h-3"></i> Plugins
+            </button>
+            <div class="h-6 w-[1px] bg-[#3f3f46] mx-2"></div>
             <button onclick="togglePageSettings()" class="p-2 text-slate-400 hover:text-white"><i data-lucide="settings" class="w-4 h-4"></i></button>
             <button onclick="exportCode()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded text-xs font-bold flex items-center gap-2"><i data-lucide="download" class="w-3 h-3"></i> Export</button>
         </div>
@@ -352,35 +387,49 @@
         
         let pages = [];
         let currentPageId = null;
-        let selectedElements = []; // Changed from single to array
+        let selectedElements = [];
         let zIndexCounter = 100;
         let viewState = { scale: 1, panX: 0, panY: 0, isPanning: false, startX: 0, startY: 0 };
+
+        // --- PLUGIN SYSTEM LOGIC ---
+        function togglePluginWindow() {
+            const win = document.getElementById('plugin-window');
+            win.style.display = (win.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function loadPlugin(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const body = document.getElementById('plugin-body');
+                body.innerHTML = e.target.result;
+                lucide.createIcons();
+            };
+            reader.readAsText(file);
+        }
+
+        // Draggable Plugin Window
+        const pHeader = document.getElementById('plugin-header');
+        const pWin = document.getElementById('plugin-window');
+        pHeader.addEventListener('mousedown', (e) => {
+            const startX = e.clientX, startY = e.clientY;
+            const rect = pWin.getBoundingClientRect();
+            const move = (e) => {
+                pWin.style.left = (rect.left + e.clientX - startX) + 'px';
+                pWin.style.top = (rect.top + e.clientY - startY) + 'px';
+            };
+            window.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', () => window.removeEventListener('mousemove', move), {once:true});
+        });
 
         // --- KEYBOARD SHORTCUTS ---
         window.addEventListener('keydown', (e) => {
             if (selectedElements.length === 0) return;
-            
-            // SHIFT + } (Bring Forward)
-            if (e.shiftKey && (e.key === '}' || e.key === ']' || e.code === 'BracketRight')) {
-                e.preventDefault();
-                changeZ(1);
-            }
-            // SHIFT + { (Send Backward)
-            if (e.shiftKey && (e.key === '{' || e.key === '[' || e.code === 'BracketLeft')) {
-                e.preventDefault();
-                changeZ(-1);
-            }
-            // Delete
-            if(e.key === 'Delete') {
-                selectedElements.forEach(el => el.remove());
-                selectedElements = [];
-                closePanel();
-            }
-            // Group (Ctrl + G)
-            if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') {
-                e.preventDefault();
-                groupSelection();
-            }
+            if (e.shiftKey && (e.key === '}' || e.key === ']' || e.code === 'BracketRight')) { e.preventDefault(); changeZ(1); }
+            if (e.shiftKey && (e.key === '{' || e.key === '[' || e.code === 'BracketLeft')) { e.preventDefault(); changeZ(-1); }
+            if(e.key === 'Delete') { selectedElements.forEach(el => el.remove()); selectedElements = []; closePanel(); }
+            if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') { e.preventDefault(); groupSelection(); }
         });
 
         // --- GLOBAL PAN & ZOOM ---
@@ -440,9 +489,7 @@
             const modal = document.getElementById('page-settings-modal');
             modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
         }
-        function closePanel() { 
-            propertiesPanel.classList.remove('open'); 
-        }
+        function closePanel() { propertiesPanel.classList.remove('open'); }
         function openSidebar() { propertiesPanel.classList.add('open'); syncInputs(); }
 
         function renderPageList() {
@@ -486,14 +533,59 @@
         }
 
         // --- DRAG & DROP ---
-        function dragStart(e) { e.dataTransfer.setData("type", e.target.getAttribute('data-type')); }
+        function dragStart(e) {
+            const type = e.target.getAttribute('data-type');
+            e.dataTransfer.setData("type", type);
+            // Support for Plugin Items (Custom HTML)
+            if (type === 'custom-html') {
+                e.dataTransfer.setData("html", e.target.getAttribute('data-content'));
+                e.dataTransfer.setData("w", e.target.getAttribute('data-w') || "200");
+                e.dataTransfer.setData("h", e.target.getAttribute('data-h') || "100");
+            }
+        }
+        
         function allowDrop(e) { e.preventDefault(); }
+        
         function dropElement(e) {
             e.preventDefault();
             const rect = canvas.getBoundingClientRect();
             const x = (e.clientX - rect.left) / viewState.scale;
             const y = (e.clientY - rect.top) / viewState.scale;
-            createWidget(e.dataTransfer.getData("type"), x, y);
+            
+            const type = e.dataTransfer.getData("type");
+            if (type === 'custom-html') {
+                const content = e.dataTransfer.getData("html");
+                const w = e.dataTransfer.getData("w");
+                const h = e.dataTransfer.getData("h");
+                createCustomWidget(content, x, y, w, h);
+            } else {
+                createWidget(type, x, y);
+            }
+        }
+
+        function createCustomWidget(html, x, y, w, h) {
+            const el = document.createElement('div');
+            el.className = 'builder-element';
+            el.style.left = x + 'px'; el.style.top = y + 'px';
+            el.style.width = w + 'px'; el.style.height = h + 'px';
+            el.style.zIndex = zIndexCounter++;
+            el.setAttribute('data-type', 'custom');
+            el.id = 'plugin_' + Math.random().toString(36).substr(2, 5);
+
+            el.innerHTML = `
+                <div class="element-controls">
+                    <div class="control-btn btn-lock" title="Lock"><i data-lucide="lock" class="w-4 h-4"></i></div>
+                    <div class="control-btn btn-copy" title="Duplicate"><i data-lucide="copy" class="w-4 h-4"></i></div>
+                    <div class="control-btn btn-edit" title="Properties"><i data-lucide="pencil" class="w-4 h-4"></i></div>
+                    <div class="control-btn btn-del" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></div>
+                </div>
+                <div class="element-content">${html}</div>
+                <div class="resizer"></div>
+            `;
+            attachListeners(el);
+            canvas.appendChild(el);
+            lucide.createIcons();
+            selectElement(el, false);
         }
 
         function createWidget(type, x, y) {
@@ -521,7 +613,7 @@
 
             el.innerHTML = `
                 <div class="element-controls">
-                    <div class="control-btn btn-lock" title="Lock/Unlock"><i data-lucide="lock" class="w-4 h-4"></i></div>
+                    <div class="control-btn btn-lock" title="Lock"><i data-lucide="lock" class="w-4 h-4"></i></div>
                     <div class="control-btn btn-copy" title="Duplicate"><i data-lucide="copy" class="w-4 h-4"></i></div>
                     <div class="control-btn btn-edit" title="Properties"><i data-lucide="pencil" class="w-4 h-4"></i></div>
                     <div class="control-btn btn-del" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></div>
@@ -536,7 +628,7 @@
             selectElement(el, false);
         }
 
-        // --- INTERACTION & GROUP LOGIC ---
+        // --- INTERACTION ---
         function attachListeners(el) {
             const btnLock = el.querySelector('.btn-lock');
             const btnCopy = el.querySelector('.btn-copy');
@@ -551,17 +643,10 @@
             el.addEventListener('mousedown', (e) => {
                 if(e.shiftKey) { startPan(e); return; }
                 if(e.target.closest('.element-controls') || e.target.classList.contains('resizer')) return;
-                
                 e.stopPropagation();
-                
-                // Multi Select Logic
                 const isMulti = e.ctrlKey || e.metaKey;
                 selectElement(el, isMulti);
-                
-                // If not locked, start move
-                if(!el.classList.contains('locked')) {
-                    startMove(e, el);
-                }
+                if(!el.classList.contains('locked')) startMove(e, el);
             });
 
             const resizer = el.querySelector('.resizer');
@@ -571,50 +656,24 @@
             });
         }
 
-        function toggleLock(e, el) {
-            e.stopPropagation();
-            el.classList.toggle('locked');
-            const icon = el.querySelector('.btn-lock i');
-            // Visual toggle (using Lucide classes re-render or just simple class switch if icon swap needed)
-            // Ideally we re-render icon, but simple color change via CSS is handled.
-            selectElement(el, false); // re-trigger selection to update UI
-        }
-
+        function toggleLock(e, el) { e.stopPropagation(); el.classList.toggle('locked'); selectElement(el, false); }
         function rehydrateElements() { canvas.querySelectorAll('.builder-element').forEach(el => attachListeners(el)); lucide.createIcons(); }
         
-        // --- SELECTION LOGIC ---
         function selectElement(el, multi) {
-            // Check for Group ID
             const groupId = el.getAttribute('data-group');
             let elementsToSelect = [el];
-            
-            // If part of a group, select all peers
-            if(groupId) {
-                elementsToSelect = Array.from(document.querySelectorAll(`.builder-element[data-group="${groupId}"]`));
-            }
+            if(groupId) elementsToSelect = Array.from(document.querySelectorAll(`.builder-element[data-group="${groupId}"]`));
 
             if (!multi) {
-                // Clear previous
                 selectedElements.forEach(item => item.classList.remove('selected'));
                 selectedElements = [];
-                // Add new
-                elementsToSelect.forEach(item => {
-                    selectedElements.push(item);
-                    item.classList.add('selected');
-                });
+                elementsToSelect.forEach(item => { selectedElements.push(item); item.classList.add('selected'); });
             } else {
-                // Toggle selection
                 elementsToSelect.forEach(item => {
-                    if(selectedElements.includes(item)) {
-                        item.classList.remove('selected');
-                        selectedElements = selectedElements.filter(x => x !== item);
-                    } else {
-                        selectedElements.push(item);
-                        item.classList.add('selected');
-                    }
+                    if(selectedElements.includes(item)) { item.classList.remove('selected'); selectedElements = selectedElements.filter(x => x !== item); } 
+                    else { selectedElements.push(item); item.classList.add('selected'); }
                 });
             }
-            
             updateUIState();
         }
 
@@ -630,15 +689,8 @@
         function updateUIState() {
             const count = selectedElements.length;
             document.getElementById('selection-count').innerText = count > 0 ? `${count} Item(s) Selected` : "No Item Selected";
-            
-            if(count === 1) {
-                document.getElementById('single-props').classList.remove('hidden');
-                syncInputs(); // Sync the single selected item
-                openSidebar();
-            } else {
-                document.getElementById('single-props').classList.add('hidden');
-                if(count > 0) openSidebar(); else closePanel();
-            }
+            if(count === 1) { document.getElementById('single-props').classList.remove('hidden'); syncInputs(); openSidebar(); } 
+            else { document.getElementById('single-props').classList.add('hidden'); if(count > 0) openSidebar(); else closePanel(); }
         }
 
         function groupSelection() {
@@ -650,68 +702,41 @@
 
         function deleteEl(e, el) { 
             e.stopPropagation(); 
-            // If grouped, delete all
             const groupId = el.getAttribute('data-group');
-            if(groupId) {
-                 document.querySelectorAll(`.builder-element[data-group="${groupId}"]`).forEach(g => g.remove());
-            } else {
-                el.remove(); 
-            }
-            selectedElements = [];
-            closePanel(); 
+            if(groupId) document.querySelectorAll(`.builder-element[data-group="${groupId}"]`).forEach(g => g.remove()); else el.remove();
+            selectedElements = []; closePanel(); 
         }
         
         function duplicateEl(e, el) { 
             e.stopPropagation(); 
-            // If grouped, duplicate entire group logic is complex, for now duplicate single
-            // Simple duplication for single items
             const clone = el.cloneNode(true); 
-            clone.id = el.getAttribute('data-type') + '_' + Math.random().toString(36).substr(2, 5); 
+            clone.id = 'dup_' + Math.random().toString(36).substr(2, 5); 
             clone.style.left = (parseFloat(el.style.left)+20)+'px'; 
             clone.style.top = (parseFloat(el.style.top)+20)+'px'; 
             clone.style.zIndex = ++zIndexCounter; 
             clone.classList.remove('selected', 'locked'); 
-            clone.removeAttribute('data-group'); // Don't clone group ID immediately
+            clone.removeAttribute('data-group');
             attachListeners(clone); 
             canvas.appendChild(clone); 
             selectElement(clone, false); 
             lucide.createIcons(); 
         }
 
-        // --- MOVING ELEMENTS (Multi-Move) ---
         function startMove(e, el) {
             const startX = e.clientX, startY = e.clientY;
-            
-            // Store initial positions of ALL selected elements
-            const initialPositions = selectedElements.map(item => ({
-                el: item,
-                startX: parseFloat(item.style.left),
-                startY: parseFloat(item.style.top)
-            }));
-
+            const initialPositions = selectedElements.map(item => ({ el: item, startX: parseFloat(item.style.left), startY: parseFloat(item.style.top) }));
             const move = (e) => {
                 const dx = (e.clientX - startX) / viewState.scale;
                 const dy = (e.clientY - startY) / viewState.scale;
-                
-                initialPositions.forEach(p => {
-                    p.el.style.left = (p.startX + dx) + 'px';
-                    p.el.style.top = (p.startY + dy) + 'px';
-                });
+                initialPositions.forEach(p => { p.el.style.left = (p.startX + dx) + 'px'; p.el.style.top = (p.startY + dy) + 'px'; });
             };
-
-            const stop = () => { 
-                window.removeEventListener('mousemove', move); 
-                window.removeEventListener('mouseup', stop); 
-            };
+            const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); };
             window.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
         }
 
         function startResize(e, el) {
             const startX = e.clientX, startY = e.clientY, sw = el.offsetWidth, sh = el.offsetHeight;
-            const resize = (e) => { 
-                el.style.width = (sw + (e.clientX - startX) / viewState.scale) + 'px'; 
-                el.style.height = (sh + (e.clientY - startY) / viewState.scale) + 'px'; 
-            };
+            const resize = (e) => { el.style.width = (sw + (e.clientX - startX) / viewState.scale) + 'px'; el.style.height = (sh + (e.clientY - startY) / viewState.scale) + 'px'; };
             window.addEventListener('mousemove', resize); window.addEventListener('mouseup', () => window.removeEventListener('mousemove', resize), {once:true});
         }
 
@@ -741,34 +766,24 @@
                 btnSet.classList.remove('hidden');
                 document.getElementById('prop-href').value = content.getAttribute('href');
                 document.getElementById('prop-target').value = content.getAttribute('target') || "_self";
-            } else {
-                btnSet.classList.add('hidden');
-            }
+            } else { btnSet.classList.add('hidden'); }
         }
 
-        // Input listeners
         document.getElementById('prop-id').addEventListener('change', e => { if(selectedElements.length===1) selectedElements[0].id = e.target.value; });
         ['prop-w', 'prop-h'].forEach(id => document.getElementById(id).addEventListener('input', e => { 
             if(selectedElements.length===1) id==='prop-w' ? selectedElements[0].style.width = e.target.value+'px' : selectedElements[0].style.height = e.target.value+'px'; 
         }));
-        // Apply Color/BG/Font to ALL selected
         document.getElementById('prop-bg').addEventListener('input', e => { selectedElements.forEach(el => el.querySelector('.element-content').style.backgroundColor = e.target.value); });
         document.getElementById('prop-color').addEventListener('input', e => { selectedElements.forEach(el => el.querySelector('.element-content').style.color = e.target.value); });
         document.getElementById('prop-radius').addEventListener('input', e => { selectedElements.forEach(el => el.querySelector('.element-content').style.borderRadius = e.target.value+'px'); });
         document.getElementById('prop-font').addEventListener('change', e => { selectedElements.forEach(el => el.querySelector('.element-content').style.fontFamily = e.target.value); });
-        
         document.getElementById('prop-content').addEventListener('input', e => {
             if(selectedElements.length !== 1) return;
             const c = selectedElements[0].querySelector('.element-content');
             if(c.tagName === 'IMG') c.src = e.target.value; else if(c.tagName === 'INPUT') c.placeholder = e.target.value; else c.innerText = e.target.value;
         });
 
-        function changeZ(v) { 
-            selectedElements.forEach(el => {
-                let currentZ = parseInt(el.style.zIndex || 0);
-                el.style.zIndex = currentZ + v;
-            });
-        }
+        function changeZ(v) { selectedElements.forEach(el => { let currentZ = parseInt(el.style.zIndex || 0); el.style.zIndex = currentZ + v; }); }
         function rgbToHex(rgb) { if(!rgb || rgb==='rgba(0, 0, 0, 0)') return '#000000'; if(rgb.startsWith('#')) return rgb; const [r,g,b] = rgb.match(/\d+/g); return "#" + ((1 << 24) + (+r << 16) + (+g << 8) + +b).toString(16).slice(1); }
 
         // --- EXPORT ---
@@ -791,7 +806,6 @@
                 allPagesHtml += `<div id="${safeName}" class="spa-page" style="display: ${index===0?'block':'none'}; position: relative; width: 100%; height: 100%;">${tempDiv.innerHTML}</div>`;
             });
 
-            // Restore guide layer
             const g = document.createElement('div'); g.id = 'guide-layer'; canvas.appendChild(g);
 
             let bodyStyle = `margin:0;background:${bg};min-height:100vh;`;
