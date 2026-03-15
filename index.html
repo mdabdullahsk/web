@@ -1,832 +1,204 @@
-<!-- START OF FILE: index.html (StudioPro Final) -->
 <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudioPro Elite - Final V4 (Plugin System)</title>
+    <title>Premium IPTV Player</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Roboto:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --accent: #3b82f6; 
-            --bg-dark: #1e1e1e; 
-            --panel-bg: #262626;
-            --border: #3f3f46;
-            --guide-color: #ff00ff;
+        body {
+            background-color: #0f172a; /* ডার্ক থিম */
+            color: #f8fafc;
         }
-
-        body { 
-            font-family: 'Poppins', sans-serif; 
-            background: var(--bg-dark); 
-            color: #e2e8f0; 
-            margin: 0; height: 100vh;
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
             overflow: hidden;
-            user-select: none;
+            background: #000;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
         }
-
-        /* --- Toolbar --- */
-        #toolkit-sidebar { 
-            width: 50px; position: fixed; left: 0; top: 50px; bottom: 0; 
-            z-index: 2000; background: var(--panel-bg); border-right: 1px solid var(--border);
-            display: flex; flex-direction: column; align-items: center; padding-top: 15px;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+        .video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
-
-        .tool-item {
-            width: 36px; height: 36px; margin-bottom: 10px; border-radius: 6px;
-            display: flex; justify-content: center; align-items: center;
-            cursor: grab; transition: 0.2s; color: #a1a1aa; position: relative;
+        .channel-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
-        .tool-item:hover { background: #3f3f46; color: white; }
-        .tool-item:active { cursor: grabbing; }
-        
-        /* Tooltips */
-        .tool-item::after {
-            content: attr(data-label); position: absolute; left: 45px; 
-            background: black; color: white; padding: 4px 8px; font-size: 10px; 
-            border-radius: 4px; opacity: 0; pointer-events: none; transition: 0.2s; 
-            white-space: nowrap; z-index: 3000;
+        .channel-card:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.5);
+            border-color: #3b82f6;
         }
-        .tool-item:hover::after { opacity: 1; }
-
-        /* --- Properties Panel --- */
-        #properties {
-            width: 280px; background: var(--panel-bg); border-left: 1px solid var(--border);
-            position: fixed; right: -280px; top: 50px; bottom: 0; z-index: 2000; 
-            display: flex; flex-direction: column; box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        .active-channel {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.6) !important;
         }
-        #properties.open { right: 0; }
-        
-        .prop-section { padding: 15px; border-bottom: 1px solid var(--border); }
-        .prop-title { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; display: block; }
-        
-        .prop-input, .prop-select {
-            width: 100%; background: #18181b; border: 1px solid #3f3f46;
-            color: white; padding: 6px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 6px;
-        }
-        .prop-input:focus { border-color: var(--accent); outline: none; }
-        .prop-row { display: flex; gap: 8px; }
-
-        /* --- Workspace --- */
-        #workspace {
-            position: absolute; top: 50px; bottom: 0; left: 50px; right: 0;
-            overflow: hidden; background-color: #121212; 
-            background-image: radial-gradient(#333 1px, transparent 1px);
-            background-size: 20px 20px;
-            cursor: default;
-        }
-        #workspace.panning, body.is-panning { cursor: grab !important; }
-        body.is-panning:active { cursor: grabbing !important; }
-
-        #zoom-wrapper {
-            width: 100%; height: 100%;
-            display: flex; justify-content: center; align-items: center;
-            transform-origin: center center;
-        }
-
-        #canvas {
-            background: #ffffff; position: relative; 
-            box-shadow: 0 0 100px rgba(0,0,0,0.8);
-        }
-
-        /* --- PLUGIN WINDOW (NEW) --- */
-        #plugin-window {
-            position: fixed; top: 100px; left: 100px; width: 320px; height: 450px;
-            background: #262626; border: 1px solid #3f3f46; border-radius: 8px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 5000;
-            display: none; flex-direction: column; resize: both; overflow: hidden;
-        }
-        #plugin-header {
-            padding: 10px; background: #18181b; border-bottom: 1px solid #3f3f46;
-            cursor: move; display: flex; justify-content: space-between; align-items: center;
-        }
-        #plugin-body {
-            flex: 1; padding: 10px; overflow-y: auto; color: white;
-        }
-        /* Style for loaded items */
-        .plugin-item {
-            background: #3f3f46; padding: 10px; margin-bottom: 10px; border-radius: 6px;
-            cursor: grab; border: 1px solid transparent; transition: 0.2s; display: block;
-        }
-        .plugin-item:hover { border-color: var(--accent); background: #52525b; }
-        .plugin-item:active { cursor: grabbing; }
-
-        /* --- Elements --- */
-        .builder-element { position: absolute; cursor: move; box-sizing: border-box; border: 1px solid transparent; }
-        .builder-element.selected { border: 1px solid var(--accent); }
-        .builder-element.locked.selected { border: 1px solid #ef4444; cursor: not-allowed; }
-
-        /* Floating Element Controls */
-        .element-controls {
-            position: absolute; top: -45px; left: 50%; transform: translateX(-50%);
-            background: #18181b; padding: 4px; border-radius: 8px; display: none; gap: 4px;
-            border: 1px solid #3f3f46; pointer-events: auto; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            z-index: 9999999 !important; 
-        }
-        .selected .element-controls { display: flex; }
-        .locked .element-controls .btn-resize, 
-        .locked .element-controls .btn-copy,
-        .locked .resizer { display: none !important; }
-
-        .control-btn {
-            width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
-            border-radius: 6px; cursor: pointer; transition: 0.2s; color: white;
-        }
-        .btn-lock { background: #f59e0b; }
-        .locked .btn-lock { background: #ef4444; }
-        .btn-copy { background: #6366f1; }
-        .btn-edit { background: var(--accent); } 
-        .btn-del { background: #ef4444; }
-        .control-btn:hover { filter: brightness(1.2); transform: translateY(-2px); }
-
-        .resizer {
-            width: 10px; height: 10px; background: white; border: 1px solid var(--accent);
-            position: absolute; bottom: -5px; right: -5px; cursor: se-resize; display: none;
-            z-index: 9999999;
-        }
-        .selected .resizer { display: block; }
-
-        .element-content { 
-            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-            overflow: hidden; pointer-events: none;
-        }
-
-        #zoom-info, #shortcut-info {
-            position: fixed; bottom: 15px;
-            background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 4px;
-            font-size: 11px; color: #aaa; pointer-events: none; border: 1px solid #333;
-        }
-        #zoom-info { left: 65px; }
-        #shortcut-info { right: 15px; text-align: right; }
-
-        /* Modals */
-        #setup-modal, #page-settings-modal, #page-manager-modal { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; display: none; align-items: center; justify-content: center; 
-        }
-        #setup-modal { display: flex; }
     </style>
 </head>
-<body class="flex flex-col">
+<body class="min-h-screen p-4 md:p-8 font-sans">
 
-    <!-- Startup Selection -->
-    <div id="setup-modal">
-        <div class="max-w-3xl w-full p-8 text-center">
-            <h1 class="text-4xl font-black mb-10 italic uppercase tracking-tighter text-white">Studio<span class="text-blue-500">Pro</span></h1>
-            <p class="text-slate-400 mb-8">Select Canvas Size</p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div onclick="initProject('mobile')" class="p-6 bg-[#262626] rounded-xl cursor-pointer hover:border-blue-500 border-2 border-transparent transition group">
-                    <i data-lucide="smartphone" class="mx-auto mb-3 w-8 h-8 text-slate-500 group-hover:text-blue-500"></i>
-                    <span class="text-xs font-bold uppercase text-white">Mobile</span>
-                </div>
-                <div onclick="initProject('tablet')" class="p-6 bg-[#262626] rounded-xl cursor-pointer hover:border-blue-500 border-2 border-transparent transition group">
-                    <i data-lucide="tablet" class="mx-auto mb-3 w-8 h-8 text-slate-500 group-hover:text-blue-500"></i>
-                    <span class="text-xs font-bold uppercase text-white">Tablet</span>
-                </div>
-                <div onclick="initProject('desktop')" class="p-6 bg-[#262626] rounded-xl cursor-pointer hover:border-blue-500 border-2 border-transparent transition group">
-                    <i data-lucide="monitor" class="mx-auto mb-3 w-8 h-8 text-slate-500 group-hover:text-blue-500"></i>
-                    <span class="text-xs font-bold uppercase text-white">Desktop</span>
-                </div>
-                <div onclick="initProject('custom')" class="p-6 bg-[#262626] rounded-xl cursor-pointer hover:border-blue-500 border-2 border-transparent transition group">
-                    <i data-lucide="maximize" class="mx-auto mb-3 w-8 h-8 text-slate-500 group-hover:text-blue-500"></i>
-                    <span class="text-xs font-bold uppercase text-white">Custom</span>
-                </div>
-            </div>
-        </div>
-    </div>
+    <header class="text-center mb-8">
+        <h1 class="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-red-500 pb-2">
+            লাইভ টিভি স্ট্রিমিং
+        </h1>
+        <p class="text-slate-400 mt-2" id="status-text">আপনার পছন্দের চ্যানেল নির্বাচন করুন</p>
+    </header>
 
-    <!-- Plugin Window (New) -->
-    <div id="plugin-window">
-        <div id="plugin-header">
-            <div class="flex items-center gap-2">
-                <i data-lucide="package" class="w-4 h-4 text-purple-400"></i>
-                <span class="text-xs font-bold text-white uppercase">Plugin Manager</span>
-            </div>
-            <button onclick="togglePluginWindow()" class="text-red-500 hover:text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button>
-        </div>
-        <div class="p-3 border-b border-[#3f3f46] bg-[#18181b]">
-            <input type="file" id="plugin-loader" accept=".html" class="hidden" onchange="loadPlugin(this)">
-            <label for="plugin-loader" class="flex items-center justify-center gap-2 w-full py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded cursor-pointer transition">
-                <i data-lucide="upload" class="w-3 h-3"></i> Load .html File
-            </label>
-        </div>
-        <div id="plugin-body">
-            <div class="h-full flex flex-col items-center justify-center text-gray-500 text-center p-4">
-                <i data-lucide="box" class="w-8 h-8 mb-2 opacity-30"></i>
-                <p class="text-xs">No plugin loaded.<br>Upload a file to see components.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Page Manager -->
-    <div id="page-manager-modal">
-        <div class="bg-[#262626] p-8 rounded-xl border border-[#3f3f46] w-96">
-            <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-white">Pages</h2><button onclick="togglePageManager()" class="text-slate-400 hover:text-white"><i data-lucide="x"></i></button></div>
-            <div id="pages-list" class="space-y-2 mb-6 max-h-60 overflow-y-auto"></div>
-            <div class="flex gap-2"><input type="text" id="new-page-name" placeholder="Page Name" class="prop-input h-10"><button onclick="addNewPage()" class="bg-blue-600 text-white px-4 rounded font-bold hover:bg-blue-500">+</button></div>
-        </div>
-    </div>
-
-    <!-- Global Settings -->
-    <div id="page-settings-modal">
-        <div class="bg-[#262626] p-8 rounded-xl border border-[#3f3f46] w-96 text-center">
-            <h2 class="text-xl font-bold mb-6 text-blue-500">Project Config</h2>
-            <div class="text-left mb-4">
-                <label class="prop-title">View Mode (Export)</label>
-                <select id="setting-scale-mode" class="prop-select">
-                    <option value="fixed">Fixed Size (Centered)</option>
-                    <option value="scale">Auto-Fit to Screen</option>
-                </select>
-            </div>
-            <div class="text-left mb-4">
-                <label class="prop-title">Background Color</label>
-                <input type="color" id="setting-page-bg" class="prop-input h-10 p-1" value="#ffffff">
-            </div>
-            <button onclick="togglePageSettings()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded font-bold mt-4">Close</button>
-        </div>
-    </div>
-
-    <!-- Top Navigation -->
-    <nav class="h-[50px] bg-[#262626] border-b border-[#3f3f46] flex justify-between items-center px-4 z-[2500] fixed w-full top-0">
-        <div class="flex items-center gap-4">
-            <span class="font-bold text-lg tracking-tighter italic uppercase text-white">Studio<span class="text-blue-500">Pro</span></span>
-            <div class="h-6 w-[1px] bg-[#3f3f46] mx-2"></div>
-            <button onclick="togglePageManager()" class="px-3 py-1 bg-[#18181b] border border-[#3f3f46] text-white rounded text-xs font-bold flex items-center gap-2 hover:border-blue-500 transition">
-                <i data-lucide="file" class="w-3 h-3 text-blue-400"></i><span id="current-page-display">Home</span><i data-lucide="chevron-down" class="w-3 h-3 text-slate-500"></i>
-            </button>
-        </div>
-        <div class="flex items-center gap-2">
-            <!-- New Plugin Button -->
-            <button onclick="togglePluginWindow()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded text-xs font-bold flex items-center gap-2 border border-purple-400/30 shadow-lg shadow-purple-900/20">
-                <i data-lucide="package-plus" class="w-3 h-3"></i> Plugins
-            </button>
-            <div class="h-6 w-[1px] bg-[#3f3f46] mx-2"></div>
-            <button onclick="togglePageSettings()" class="p-2 text-slate-400 hover:text-white"><i data-lucide="settings" class="w-4 h-4"></i></button>
-            <button onclick="exportCode()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded text-xs font-bold flex items-center gap-2"><i data-lucide="download" class="w-3 h-3"></i> Export</button>
-        </div>
-    </nav>
-
-    <div class="flex flex-1 overflow-hidden h-screen pt-[50px]">
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        <!-- Toolkit Sidebar -->
-        <aside id="toolkit-sidebar">
-            <div draggable="true" ondragstart="dragStart(event)" data-type="text" class="tool-item" data-label="Text"><i data-lucide="type" class="w-5 h-5"></i></div>
-            <div draggable="true" ondragstart="dragStart(event)" data-type="button" class="tool-item" data-label="Button"><i data-lucide="mouse-pointer-2" class="w-5 h-5"></i></div>
-            <div draggable="true" ondragstart="dragStart(event)" data-type="image" class="tool-item" data-label="Image"><i data-lucide="image" class="w-5 h-5"></i></div>
-            <div draggable="true" ondragstart="dragStart(event)" data-type="box" class="tool-item" data-label="Box"><i data-lucide="square" class="w-5 h-5"></i></div>
-            <div draggable="true" ondragstart="dragStart(event)" data-type="circle" class="tool-item" data-label="Circle"><i data-lucide="circle" class="w-5 h-5"></i></div>
-            <div draggable="true" ondragstart="dragStart(event)" data-type="input" class="tool-item" data-label="Input"><i data-lucide="text-cursor-input" class="w-5 h-5"></i></div>
-            <div draggable="true" ondragstart="dragStart(event)" data-type="card" class="tool-item" data-label="Card"><i data-lucide="layout" class="w-5 h-5"></i></div>
+        <div class="lg:col-span-2">
+            <div class="video-container">
+                <video id="video" controls autoplay></video>
+            </div>
+            <div class="mt-4 flex justify-between items-center bg-slate-800 p-4 rounded-lg border border-slate-700">
+                <div>
+                    <span class="text-red-500 font-bold text-sm uppercase tracking-wider animate-pulse">● Live</span>
+                    <h2 id="now-playing" class="text-xl font-semibold mt-1">কোনো চ্যানেল চলছে না</h2>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h3 class="text-xl font-semibold mb-4 border-b border-slate-700 pb-2">টিভি চ্যানেল সমূহ</h3>
             
-            <div class="mt-auto mb-4 border-t border-[#3f3f46] w-8 pt-3 flex justify-center">
-                 <button onclick="resetView()" title="Fit Screen" class="text-[10px] text-gray-400 font-bold border border-gray-600 rounded px-1 hover:text-white">100%</button>
-            </div>
-        </aside>
-
-        <!-- Workspace Canvas -->
-        <main id="workspace">
-            <div id="zoom-wrapper">
-                <div id="canvas" ondragover="allowDrop(event)" ondrop="dropElement(event)">
-                    <div id="guide-layer"></div>
+            <div id="channel-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-hide">
                 </div>
-            </div>
-            <div id="zoom-info">Shift + Drag to Pan</div>
-            <div id="shortcut-info">
-                Ctrl + Click : Multi Select<br>
-                Ctrl + G : Group Selection<br>
-                Shift + } : Bring Front
-            </div>
-        </main>
-
-        <!-- Properties Panel -->
-        <aside id="properties">
-            <div class="h-10 flex justify-between items-center px-4 bg-[#18181b] border-b border-[#3f3f46]">
-                <span class="text-xs font-bold uppercase text-white">Properties</span>
-                <button onclick="closePanel()" class="text-red-500 hover:text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button>
-            </div>
-            <div class="overflow-y-auto flex-1 pb-10">
-                <div class="prop-section text-center">
-                    <span id="selection-count" class="text-xs text-slate-400">No Item Selected</span>
-                </div>
-                
-                <div id="single-props">
-                    <div class="prop-section">
-                        <label class="prop-title text-yellow-500">Element ID</label>
-                        <input type="text" id="prop-id" class="prop-input font-mono text-yellow-400" placeholder="unique_id">
-                    </div>
-
-                    <div class="prop-section">
-                        <label class="prop-title">Transform</label>
-                        <div class="prop-row">
-                            <div><span class="text-[9px] text-gray-500">W</span><input type="number" id="prop-w" class="prop-input"></div>
-                            <div><span class="text-[9px] text-gray-500">H</span><input type="number" id="prop-h" class="prop-input"></div>
-                        </div>
-                    </div>
-
-                    <div class="prop-section">
-                        <label class="prop-title">Content & Style</label>
-                        <textarea id="prop-content" rows="3" class="prop-input" placeholder="Text content..."></textarea>
-                        <div class="prop-row mt-2">
-                            <div class="w-1/2">
-                                <label class="text-[10px] text-gray-500">Text Color</label>
-                                <input type="color" id="prop-color" class="w-full h-8 rounded bg-transparent border border-gray-600 cursor-pointer">
-                            </div>
-                            <div class="w-1/2">
-                                <label class="text-[10px] text-gray-500">Background</label>
-                                <input type="color" id="prop-bg" class="w-full h-8 rounded bg-transparent border border-gray-600 cursor-pointer">
-                            </div>
-                        </div>
-                        <label class="text-[10px] text-gray-500 mt-2 block">Font Family</label>
-                        <select id="prop-font" class="prop-select">
-                            <option value="'Poppins', sans-serif">Poppins</option>
-                            <option value="'Roboto', sans-serif">Roboto</option>
-                            <option value="'Montserrat', sans-serif">Montserrat</option>
-                            <option value="'Open Sans', sans-serif">Open Sans</option>
-                            <option value="serif">Serif</option>
-                            <option value="monospace">Monospace</option>
-                        </select>
-                    </div>
-
-                    <div class="prop-section">
-                        <label class="prop-title">Decorations</label>
-                        <label class="text-[10px] text-gray-500">Border Radius</label>
-                        <input type="number" id="prop-radius" class="prop-input">
-                    </div>
-
-                    <div id="btn-settings" class="prop-section hidden">
-                        <label class="prop-title text-blue-500">Link Actions</label>
-                        <input type="text" id="prop-href" class="prop-input" placeholder="#PageID or https://...">
-                        <select id="prop-target" class="prop-select">
-                            <option value="_self">Same Tab</option>
-                            <option value="_blank">New Tab</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="prop-section">
-                    <label class="prop-title">Layer (Z-Index)</label>
-                    <div class="flex gap-2 mb-2">
-                        <button onclick="changeZ(1)" class="w-1/2 bg-[#3f3f46] py-1 rounded text-[10px] hover:bg-white hover:text-black">Bring Forward</button>
-                        <button onclick="changeZ(-1)" class="w-1/2 bg-[#3f3f46] py-1 rounded text-[10px] hover:bg-white hover:text-black">Send Backward</button>
-                    </div>
-                </div>
-            </div>
-        </aside>
+        </div>
     </div>
 
     <script>
-        lucide.createIcons();
-        const canvas = document.getElementById('canvas');
-        const zoomWrapper = document.getElementById('zoom-wrapper');
-        const propertiesPanel = document.getElementById('properties');
-        const workspace = document.getElementById('workspace');
-        
-        let pages = [];
-        let currentPageId = null;
-        let selectedElements = [];
-        let zIndexCounter = 100;
-        let viewState = { scale: 1, panX: 0, panY: 0, isPanning: false, startX: 0, startY: 0 };
+        let hls; // HLS অবজেক্ট
 
-        // --- PLUGIN SYSTEM LOGIC ---
-        function togglePluginWindow() {
-            const win = document.getElementById('plugin-window');
-            win.style.display = (win.style.display === 'flex') ? 'none' : 'flex';
+        // চ্যানেল লিস্ট
+        const channels = [
+            { id: '1', name: 'T SPORTS', image: 'http://103.144.89.251/assets/images/T SPORTS1744972630.png' },
+            { id: '2', name: 'STAR SPORTS 1', image: 'http://103.144.89.251/assets/images/STAR SPORTS 1 HD1744991778.png' },
+            { id: '79', name: 'SOMOY TV', image: 'http://103.144.89.251/assets/images/SOMOY TV1745044149.png' },
+            { id: '82', name: 'CHANNEL 24', image: 'http://103.144.89.251/assets/images/CHANNEL 241745044263.png' },
+            { id: '56', name: 'GTV', image: 'http://103.144.89.251/assets/images/GTV1745042853.png' },
+            { id: '77', name: 'INDEPENDENT', image: 'http://103.144.89.251/assets/images/INDEPENDENT TV1745044077.png' },
+            { id: '18', name: 'STAR JALSHA', image: 'http://103.144.89.251/assets/images/STAR JALSHA HD1745033819.png' },
+            { id: '14', name: 'ZEE BANGLA', image: 'http://103.144.89.251/assets/images/ZEE BANGLA HD1745033633.png' },
+            { id: '8', name: 'CARTOON NETWORK', image: 'http://103.144.89.251/assets/images/CARTOON NETWORK1745033414.png' }
+        ];
+
+        // পেজ লোড হলে চ্যানেলগুলো স্ক্রিনে দেখানো
+        function renderChannels() {
+            const listContainer = document.getElementById('channel-list');
+            listContainer.innerHTML = '';
+
+            channels.forEach(channel => {
+                const card = document.createElement('div');
+                card.className = `channel-card bg-slate-800 border border-slate-700 rounded-lg p-3 text-center flex flex-col items-center justify-center h-28`;
+                card.id = `channel-${channel.id}`;
+                
+                // চ্যানেল ক্লিক ইভেন্ট
+                card.onclick = () => loadChannel(channel.id, channel.name);
+
+                // ছবির লিঙ্ক কাজ না করলে শুধু নাম দেখাবে
+                card.innerHTML = `
+                    <img src="${channel.image}" alt="${channel.name}" onerror="this.style.display='none'" class="h-12 object-contain mb-2">
+                    <span class="text-xs font-medium text-slate-300">${channel.name}</span>
+                `;
+                listContainer.appendChild(card);
+            });
         }
 
-        function loadPlugin(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const body = document.getElementById('plugin-body');
-                body.innerHTML = e.target.result;
-                lucide.createIcons();
-            };
-            reader.readAsText(file);
-        }
-
-        // Draggable Plugin Window
-        const pHeader = document.getElementById('plugin-header');
-        const pWin = document.getElementById('plugin-window');
-        pHeader.addEventListener('mousedown', (e) => {
-            const startX = e.clientX, startY = e.clientY;
-            const rect = pWin.getBoundingClientRect();
-            const move = (e) => {
-                pWin.style.left = (rect.left + e.clientX - startX) + 'px';
-                pWin.style.top = (rect.top + e.clientY - startY) + 'px';
-            };
-            window.addEventListener('mousemove', move);
-            window.addEventListener('mouseup', () => window.removeEventListener('mousemove', move), {once:true});
-        });
-
-        // --- KEYBOARD SHORTCUTS ---
-        window.addEventListener('keydown', (e) => {
-            if (selectedElements.length === 0) return;
-            if (e.shiftKey && (e.key === '}' || e.key === ']' || e.code === 'BracketRight')) { e.preventDefault(); changeZ(1); }
-            if (e.shiftKey && (e.key === '{' || e.key === '[' || e.code === 'BracketLeft')) { e.preventDefault(); changeZ(-1); }
-            if(e.key === 'Delete') { selectedElements.forEach(el => el.remove()); selectedElements = []; closePanel(); }
-            if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') { e.preventDefault(); groupSelection(); }
-        });
-
-        // --- GLOBAL PAN & ZOOM ---
-        function startPan(e) {
-            e.preventDefault();
-            viewState.isPanning = true;
-            viewState.startX = e.clientX - viewState.panX;
-            viewState.startY = e.clientY - viewState.panY;
-            document.body.classList.add('is-panning');
-        }
-        workspace.addEventListener('mousedown', (e) => { if (e.shiftKey || e.button === 1) startPan(e); });
-        window.addEventListener('mousemove', (e) => {
-            if(viewState.isPanning) {
-                e.preventDefault();
-                viewState.panX = e.clientX - viewState.startX;
-                viewState.panY = e.clientY - viewState.startY;
-                updateTransform();
-            }
-        });
-        window.addEventListener('mouseup', () => { viewState.isPanning = false; document.body.classList.remove('is-panning'); });
-        workspace.addEventListener('wheel', (e) => {
-            if(e.ctrlKey || e.metaKey || !viewState.isPanning) {
-                e.preventDefault();
-                const newScale = Math.min(Math.max(0.1, viewState.scale - (e.deltaY * 0.001)), 5.0);
-                viewState.scale = newScale;
-                updateTransform();
-            }
-        });
-        function updateTransform() {
-            zoomWrapper.style.transform = `translate(${viewState.panX}px, ${viewState.panY}px) scale(${viewState.scale})`;
-            document.getElementById('zoom-info').innerText = `Zoom: ${Math.round(viewState.scale*100)}% (Shift+Drag to Pan)`;
-        }
-        function resetView() { viewState.scale = 0.8; viewState.panX = 0; viewState.panY = 0; updateTransform(); }
-
-        // --- APP LOGIC ---
-        function initProject(type) {
-            canvas.style.borderRadius = '0px';
-            if(type === 'mobile') { canvas.style.width = '375px'; canvas.style.height = '667px'; canvas.style.borderRadius = '0px'; }
-            else if(type === 'tablet') { canvas.style.width = '768px'; canvas.style.height = '1024px'; }
-            else if(type === 'desktop') { canvas.style.width = '1280px'; canvas.style.height = '800px'; }
-            else { canvas.style.width = '1000px'; canvas.style.height = '600px'; }
+        // চ্যানেল প্লে করার ফাংশন (CORS Proxy ব্যবহার করে সরাসরি ফ্রন্টএন্ড থেকে)
+        async function loadChannel(channelId, channelName) {
+            const statusText = document.getElementById('status-text');
+            const nowPlaying = document.getElementById('now-playing');
             
-            const initialPage = { id: 'page_' + Date.now(), name: 'Home', content: '' };
-            pages.push(initialPage);
-            currentPageId = initialPage.id;
-            document.getElementById('setup-modal').style.display = 'none';
-            renderPageList();
-            resetView();
-        }
-
-        function togglePageManager() {
-            const modal = document.getElementById('page-manager-modal');
-            modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
-            if(modal.style.display === 'flex') renderPageList();
-        }
-        function togglePageSettings() {
-            const modal = document.getElementById('page-settings-modal');
-            modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
-        }
-        function closePanel() { propertiesPanel.classList.remove('open'); }
-        function openSidebar() { propertiesPanel.classList.add('open'); syncInputs(); }
-
-        function renderPageList() {
-            const list = document.getElementById('pages-list');
-            list.innerHTML = '';
-            pages.forEach((p, index) => {
-                const isActive = p.id === currentPageId;
-                const div = document.createElement('div');
-                div.className = `flex justify-between items-center p-2 rounded mb-1 border ${isActive ? 'border-blue-500 bg-blue-500/10' : 'border-transparent hover:bg-[#3f3f46]'}`;
-                div.innerHTML = `<div class="cursor-pointer font-medium text-sm ${isActive?'text-white':'text-slate-400'}" onclick="switchPage('${p.id}')">${p.name}</div>`;
-                list.appendChild(div);
-            });
-            document.getElementById('current-page-display').innerText = pages.find(p => p.id === currentPageId).name;
-        }
-
-        function saveCurrentPage() {
-            document.querySelectorAll('.guide-line').forEach(g => g.remove());
-            const page = pages.find(p => p.id === currentPageId);
-            if(page) page.content = canvas.innerHTML;
-        }
-
-        function addNewPage() {
-            const name = document.getElementById('new-page-name').value.trim() || `Page ${pages.length + 1}`;
-            saveCurrentPage();
-            const newPage = { id: 'page_' + Date.now(), name: name, content: '<div id="guide-layer"></div>' };
-            pages.push(newPage);
-            switchPage(newPage.id);
-            document.getElementById('new-page-name').value = '';
-        }
-
-        function switchPage(id) {
-            if(id === currentPageId) return;
-            saveCurrentPage();
-            deselectAll({target: workspace});
-            currentPageId = id;
-            const page = pages.find(p => p.id === id);
-            canvas.innerHTML = page.content;
-            if(!canvas.querySelector('#guide-layer')) canvas.appendChild(document.createElement('div')).id = 'guide-layer';
-            rehydrateElements();
-            renderPageList();
-        }
-
-        // --- DRAG & DROP ---
-        function dragStart(e) {
-            const type = e.target.getAttribute('data-type');
-            e.dataTransfer.setData("type", type);
-            // Support for Plugin Items (Custom HTML)
-            if (type === 'custom-html') {
-                e.dataTransfer.setData("html", e.target.getAttribute('data-content'));
-                e.dataTransfer.setData("w", e.target.getAttribute('data-w') || "200");
-                e.dataTransfer.setData("h", e.target.getAttribute('data-h') || "100");
-            }
-        }
-        
-        function allowDrop(e) { e.preventDefault(); }
-        
-        function dropElement(e) {
-            e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) / viewState.scale;
-            const y = (e.clientY - rect.top) / viewState.scale;
+            // সব কার্ড থেকে এক্টিভ ডিজাইন রিমুভ করা
+            document.querySelectorAll('.channel-card').forEach(c => c.classList.remove('active-channel'));
             
-            const type = e.dataTransfer.getData("type");
-            if (type === 'custom-html') {
-                const content = e.dataTransfer.getData("html");
-                const w = e.dataTransfer.getData("w");
-                const h = e.dataTransfer.getData("h");
-                createCustomWidget(content, x, y, w, h);
-            } else {
-                createWidget(type, x, y);
+            // যেটাতে ক্লিক করা হয়েছে সেটাকে হাইলাইট করা
+            document.getElementById(`channel-${channelId}`).classList.add('active-channel');
+
+            statusText.innerText = "লিঙ্ক খোঁজা হচ্ছে... দয়া করে অপেক্ষা করুন।";
+            statusText.className = "text-yellow-400 mt-2 font-semibold";
+            nowPlaying.innerText = `${channelName} (লোডিং...)`;
+
+            try {
+                // টার্গেট URL এবং CORS প্রক্সি URL
+                const targetUrl = `http://103.144.89.251/player.php?stream=${channelId}`;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+                // প্রক্সি সার্ভার থেকে ডেটা আনা
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+
+                if (data.contents) {
+                    const html = data.contents;
+                    // Regex দিয়ে .m3u8 লিঙ্ক এবং টোকেন বের করা
+                    const streamLinkMatch = html.match(/([^\s"'<>]+\.m3u8[^\s"'<>]*)/i);
+
+                    if (streamLinkMatch && streamLinkMatch[0]) {
+                        let streamUrl = streamLinkMatch[0];
+
+                        // যদি লিঙ্কটি "http" দিয়ে শুরু না হয়, তবে মূল আইপি যুক্ত করা
+                        if (!streamUrl.startsWith('http')) {
+                            if (!streamUrl.startsWith('/')) {
+                                streamUrl = '/' + streamUrl;
+                            }
+                            streamUrl = 'http://103.144.89.251' + streamUrl;
+                        }
+
+                        statusText.innerText = "সফলভাবে কানেক্ট হয়েছে!";
+                        statusText.className = "text-green-400 mt-2 font-semibold";
+                        nowPlaying.innerText = channelName;
+                        
+                        // ভিডিও প্লে করা
+                        playVideo(streamUrl);
+                    } else {
+                        statusText.innerText = "লিঙ্ক পাওয়া যায়নি: এই চ্যানেলের কোনো স্ট্রিমিং লিঙ্ক নেই!";
+                        statusText.className = "text-red-400 mt-2 font-semibold";
+                    }
+                } else {
+                    throw new Error("প্রক্সি সার্ভার থেকে কোনো রেসপন্স আসেনি");
+                }
+
+            } catch (error) {
+                console.error('Fetch Error:', error);
+                statusText.innerText = "এরর: টার্গেট সাইটের সাথে কানেক্ট করা যায়নি!";
+                statusText.className = "text-red-500 mt-2 font-semibold";
             }
         }
 
-        function createCustomWidget(html, x, y, w, h) {
-            const el = document.createElement('div');
-            el.className = 'builder-element';
-            el.style.left = x + 'px'; el.style.top = y + 'px';
-            el.style.width = w + 'px'; el.style.height = h + 'px';
-            el.style.zIndex = zIndexCounter++;
-            el.setAttribute('data-type', 'custom');
-            el.id = 'plugin_' + Math.random().toString(36).substr(2, 5);
+        // ভিডিও প্লেয়ারে স্ট্রিমিং লিঙ্ক চালানো
+        function playVideo(streamUrl) {
+            var video = document.getElementById('video');
+            
+            if (hls) { hls.destroy(); }
 
-            el.innerHTML = `
-                <div class="element-controls">
-                    <div class="control-btn btn-lock" title="Lock"><i data-lucide="lock" class="w-4 h-4"></i></div>
-                    <div class="control-btn btn-copy" title="Duplicate"><i data-lucide="copy" class="w-4 h-4"></i></div>
-                    <div class="control-btn btn-edit" title="Properties"><i data-lucide="pencil" class="w-4 h-4"></i></div>
-                    <div class="control-btn btn-del" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></div>
-                </div>
-                <div class="element-content">${html}</div>
-                <div class="resizer"></div>
-            `;
-            attachListeners(el);
-            canvas.appendChild(el);
-            lucide.createIcons();
-            selectElement(el, false);
-        }
-
-        function createWidget(type, x, y) {
-            const elements = document.querySelectorAll('.builder-element');
-            elements.forEach(el => {
-                const z = parseInt(el.style.zIndex || 0);
-                if(z >= zIndexCounter) zIndexCounter = z + 1;
-            });
-
-            const el = document.createElement('div');
-            el.className = 'builder-element';
-            el.style.left = x + 'px'; el.style.top = y + 'px';
-            el.style.zIndex = zIndexCounter++;
-            el.setAttribute('data-type', type);
-            el.id = type + '_' + Math.random().toString(36).substr(2, 5);
-
-            let inner = '', sw=200, sh=60;
-            if(type === 'text') { inner = `<div class="element-content text-black text-xl font-bold" style="font-family: 'Poppins', sans-serif;">Edit Text</div>`; }
-            else if(type === 'button') { inner = `<a href="#" class="element-content bg-blue-600 text-white rounded-lg font-bold flex items-center justify-center h-full w-full" style="text-decoration: none;">Button</a>`; sw=140; sh=45; }
-            else if(type === 'image') { inner = `<img src="https://via.placeholder.com/300" class="element-content object-cover w-full h-full">`; sw=200; sh=150; }
-            else if(type === 'box') { inner = `<div class="element-content border border-slate-300 bg-gray-100 w-full h-full"></div>`; sw=150; sh=150; }
-            else if(type === 'circle') { inner = `<div class="element-content bg-red-500 rounded-full w-full h-full"></div>`; sw=100; sh=100; }
-            else if(type === 'input') { inner = `<input placeholder="Enter text..." class="element-content border border-slate-300 rounded px-3 w-full h-full text-black">`; sw=220; sh=40; }
-            else if(type === 'card') { inner = `<div class="element-content bg-white border border-slate-200 p-4 shadow-sm w-full h-full flex flex-col"><div class="h-24 bg-slate-100 mb-2 w-full"></div><div class="h-4 bg-slate-200 w-3/4"></div></div>`; sw=200; sh=250; }
-
-            el.innerHTML = `
-                <div class="element-controls">
-                    <div class="control-btn btn-lock" title="Lock"><i data-lucide="lock" class="w-4 h-4"></i></div>
-                    <div class="control-btn btn-copy" title="Duplicate"><i data-lucide="copy" class="w-4 h-4"></i></div>
-                    <div class="control-btn btn-edit" title="Properties"><i data-lucide="pencil" class="w-4 h-4"></i></div>
-                    <div class="control-btn btn-del" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></div>
-                </div>
-                ${inner}
-                <div class="resizer"></div>
-            `;
-            el.style.width = sw + 'px'; el.style.height = sh + 'px';
-            attachListeners(el);
-            canvas.appendChild(el);
-            lucide.createIcons();
-            selectElement(el, false);
-        }
-
-        // --- INTERACTION ---
-        function attachListeners(el) {
-            const btnLock = el.querySelector('.btn-lock');
-            const btnCopy = el.querySelector('.btn-copy');
-            const btnEdit = el.querySelector('.btn-edit');
-            const btnDel = el.querySelector('.btn-del');
-
-            if(btnLock) btnLock.addEventListener('mousedown', (e) => toggleLock(e, el));
-            if(btnCopy) btnCopy.addEventListener('mousedown', (e) => duplicateEl(e, el));
-            if(btnEdit) btnEdit.addEventListener('mousedown', (e) => { e.stopPropagation(); openSidebar(); });
-            if(btnDel) btnDel.addEventListener('mousedown', (e) => deleteEl(e, el));
-
-            el.addEventListener('mousedown', (e) => {
-                if(e.shiftKey) { startPan(e); return; }
-                if(e.target.closest('.element-controls') || e.target.classList.contains('resizer')) return;
-                e.stopPropagation();
-                const isMulti = e.ctrlKey || e.metaKey;
-                selectElement(el, isMulti);
-                if(!el.classList.contains('locked')) startMove(e, el);
-            });
-
-            const resizer = el.querySelector('.resizer');
-            if(resizer) resizer.addEventListener('mousedown', (e) => { 
-                e.stopPropagation(); 
-                if(!el.classList.contains('locked')) startResize(e, el); 
-            });
-        }
-
-        function toggleLock(e, el) { e.stopPropagation(); el.classList.toggle('locked'); selectElement(el, false); }
-        function rehydrateElements() { canvas.querySelectorAll('.builder-element').forEach(el => attachListeners(el)); lucide.createIcons(); }
-        
-        function selectElement(el, multi) {
-            const groupId = el.getAttribute('data-group');
-            let elementsToSelect = [el];
-            if(groupId) elementsToSelect = Array.from(document.querySelectorAll(`.builder-element[data-group="${groupId}"]`));
-
-            if (!multi) {
-                selectedElements.forEach(item => item.classList.remove('selected'));
-                selectedElements = [];
-                elementsToSelect.forEach(item => { selectedElements.push(item); item.classList.add('selected'); });
-            } else {
-                elementsToSelect.forEach(item => {
-                    if(selectedElements.includes(item)) { item.classList.remove('selected'); selectedElements = selectedElements.filter(x => x !== item); } 
-                    else { selectedElements.push(item); item.classList.add('selected'); }
+            if (Hls.isSupported()) {
+                hls = new Hls();
+                hls.loadSource(streamUrl);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    video.play();
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = streamUrl;
+                video.addEventListener('loadedmetadata', function() {
+                    video.play();
                 });
             }
-            updateUIState();
         }
 
-        function deselectAll(e) { 
-            if(e.target.id === 'workspace' || e.target.id === 'canvas' || e.target.id === 'zoom-wrapper') { 
-                selectedElements.forEach(item => item.classList.remove('selected'));
-                selectedElements = [];
-                closePanel();
-                updateUIState();
-            } 
-        }
-
-        function updateUIState() {
-            const count = selectedElements.length;
-            document.getElementById('selection-count').innerText = count > 0 ? `${count} Item(s) Selected` : "No Item Selected";
-            if(count === 1) { document.getElementById('single-props').classList.remove('hidden'); syncInputs(); openSidebar(); } 
-            else { document.getElementById('single-props').classList.add('hidden'); if(count > 0) openSidebar(); else closePanel(); }
-        }
-
-        function groupSelection() {
-            if(selectedElements.length < 2) return;
-            const groupId = 'g_' + Date.now();
-            selectedElements.forEach(el => el.setAttribute('data-group', groupId));
-            alert('Items Grouped!');
-        }
-
-        function deleteEl(e, el) { 
-            e.stopPropagation(); 
-            const groupId = el.getAttribute('data-group');
-            if(groupId) document.querySelectorAll(`.builder-element[data-group="${groupId}"]`).forEach(g => g.remove()); else el.remove();
-            selectedElements = []; closePanel(); 
-        }
-        
-        function duplicateEl(e, el) { 
-            e.stopPropagation(); 
-            const clone = el.cloneNode(true); 
-            clone.id = 'dup_' + Math.random().toString(36).substr(2, 5); 
-            clone.style.left = (parseFloat(el.style.left)+20)+'px'; 
-            clone.style.top = (parseFloat(el.style.top)+20)+'px'; 
-            clone.style.zIndex = ++zIndexCounter; 
-            clone.classList.remove('selected', 'locked'); 
-            clone.removeAttribute('data-group');
-            attachListeners(clone); 
-            canvas.appendChild(clone); 
-            selectElement(clone, false); 
-            lucide.createIcons(); 
-        }
-
-        function startMove(e, el) {
-            const startX = e.clientX, startY = e.clientY;
-            const initialPositions = selectedElements.map(item => ({ el: item, startX: parseFloat(item.style.left), startY: parseFloat(item.style.top) }));
-            const move = (e) => {
-                const dx = (e.clientX - startX) / viewState.scale;
-                const dy = (e.clientY - startY) / viewState.scale;
-                initialPositions.forEach(p => { p.el.style.left = (p.startX + dx) + 'px'; p.el.style.top = (p.startY + dy) + 'px'; });
-            };
-            const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); };
-            window.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
-        }
-
-        function startResize(e, el) {
-            const startX = e.clientX, startY = e.clientY, sw = el.offsetWidth, sh = el.offsetHeight;
-            const resize = (e) => { el.style.width = (sw + (e.clientX - startX) / viewState.scale) + 'px'; el.style.height = (sh + (e.clientY - startY) / viewState.scale) + 'px'; };
-            window.addEventListener('mousemove', resize); window.addEventListener('mouseup', () => window.removeEventListener('mousemove', resize), {once:true});
-        }
-
-        // --- PROPERTIES ---
-        function syncInputs() {
-            if(selectedElements.length !== 1) return;
-            const el = selectedElements[0];
-            const content = el.querySelector('.element-content');
-            const type = el.getAttribute('data-type');
-            
-            document.getElementById('prop-id').value = el.id;
-            document.getElementById('prop-w').value = parseInt(el.style.width);
-            document.getElementById('prop-h').value = parseInt(el.style.height);
-            
-            if(type === 'image') document.getElementById('prop-content').value = content.src;
-            else if(type === 'input') document.getElementById('prop-content').value = content.placeholder;
-            else document.getElementById('prop-content').value = content.innerText;
-
-            const comp = window.getComputedStyle(content);
-            document.getElementById('prop-bg').value = rgbToHex(comp.backgroundColor);
-            document.getElementById('prop-color').value = rgbToHex(comp.color);
-            document.getElementById('prop-radius').value = parseInt(comp.borderRadius) || 0;
-            document.getElementById('prop-font').value = content.style.fontFamily.replace(/"/g,"'") || "'Poppins', sans-serif";
-
-            const btnSet = document.getElementById('btn-settings');
-            if(type === 'button' && content.tagName === 'A') {
-                btnSet.classList.remove('hidden');
-                document.getElementById('prop-href').value = content.getAttribute('href');
-                document.getElementById('prop-target').value = content.getAttribute('target') || "_self";
-            } else { btnSet.classList.add('hidden'); }
-        }
-
-        document.getElementById('prop-id').addEventListener('change', e => { if(selectedElements.length===1) selectedElements[0].id = e.target.value; });
-        ['prop-w', 'prop-h'].forEach(id => document.getElementById(id).addEventListener('input', e => { 
-            if(selectedElements.length===1) id==='prop-w' ? selectedElements[0].style.width = e.target.value+'px' : selectedElements[0].style.height = e.target.value+'px'; 
-        }));
-        document.getElementById('prop-bg').addEventListener('input', e => { selectedElements.forEach(el => el.querySelector('.element-content').style.backgroundColor = e.target.value); });
-        document.getElementById('prop-color').addEventListener('input', e => { selectedElements.forEach(el => el.querySelector('.element-content').style.color = e.target.value); });
-        document.getElementById('prop-radius').addEventListener('input', e => { selectedElements.forEach(el => el.querySelector('.element-content').style.borderRadius = e.target.value+'px'); });
-        document.getElementById('prop-font').addEventListener('change', e => { selectedElements.forEach(el => el.querySelector('.element-content').style.fontFamily = e.target.value); });
-        document.getElementById('prop-content').addEventListener('input', e => {
-            if(selectedElements.length !== 1) return;
-            const c = selectedElements[0].querySelector('.element-content');
-            if(c.tagName === 'IMG') c.src = e.target.value; else if(c.tagName === 'INPUT') c.placeholder = e.target.value; else c.innerText = e.target.value;
-        });
-
-        function changeZ(v) { selectedElements.forEach(el => { let currentZ = parseInt(el.style.zIndex || 0); el.style.zIndex = currentZ + v; }); }
-        function rgbToHex(rgb) { if(!rgb || rgb==='rgba(0, 0, 0, 0)') return '#000000'; if(rgb.startsWith('#')) return rgb; const [r,g,b] = rgb.match(/\d+/g); return "#" + ((1 << 24) + (+r << 16) + (+g << 8) + +b).toString(16).slice(1); }
-
-        // --- EXPORT ---
-        function exportCode() {
-            saveCurrentPage();
-            const scaleMode = document.getElementById('setting-scale-mode').value;
-            const bg = document.getElementById('setting-page-bg').value;
-            let allPagesHtml = '';
-            
-            pages.forEach((page, index) => {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = page.content;
-                tempDiv.querySelectorAll('.element-controls, .resizer, .guide-line, #guide-layer').forEach(e => e.remove());
-                tempDiv.querySelectorAll('.builder-element').forEach(el => {
-                    el.classList.remove('selected', 'locked'); 
-                    el.style.border = 'none';
-                    if(el.querySelector('.element-content')) el.querySelector('.element-content').style.pointerEvents = 'auto';
-                });
-                const safeName = page.name.replace(/\s+/g, '');
-                allPagesHtml += `<div id="${safeName}" class="spa-page" style="display: ${index===0?'block':'none'}; position: relative; width: 100%; height: 100%;">${tempDiv.innerHTML}</div>`;
-            });
-
-            const g = document.createElement('div'); g.id = 'guide-layer'; canvas.appendChild(g);
-
-            let bodyStyle = `margin:0;background:${bg};min-height:100vh;`;
-            let containerStyle = `position:relative;width:${canvas.offsetWidth}px;height:${canvas.offsetHeight}px;background:#fff;box-shadow:0 20px 50px rgba(0,0,0,0.5);overflow:hidden;`;
-            let extraScript = '';
-
-            if (scaleMode === 'fixed') {
-                bodyStyle += `display:flex;justify-content:center;align-items:center;padding:20px;box-sizing:border-box;`;
-                containerStyle += `flex-shrink:0;${canvas.style.borderRadius ? `border-radius:${canvas.style.borderRadius};` : ''}`;
-            } else if (scaleMode === 'scale') {
-                bodyStyle += `overflow:hidden;width:100vw;height:100vh;display:flex;justify-content:center;align-items:center;`;
-                containerStyle += `transform-origin: center center; position: absolute;`;
-                extraScript = `<script>function resize(){const c=document.querySelector('.page-container');if(!c)return;const cw=${canvas.offsetWidth},ch=${canvas.offsetHeight},ww=window.innerWidth,wh=window.innerHeight,s=Math.min(ww/cw,wh/ch);c.style.transform='scale('+s+')'}window.addEventListener('resize',resize);window.addEventListener('load',resize);<\/script>`;
-            }
-
-            const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Export</title><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Roboto:wght@400;700&display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com"><\/script><style>body{${bodyStyle}}.page-container{${containerStyle}}.builder-element{position:absolute}.element-content{width:100%;height:100%;display:flex;align-items:center;justify-content:center;text-decoration:none}</style></head><body><div class="page-container">${allPagesHtml}</div><script>function navigateTo(p){document.querySelectorAll('.spa-page').forEach(e=>e.style.display='none');const t=document.getElementById(p);if(t)t.style.display='block'}document.addEventListener('click',e=>{if(e.target.tagName==='A'&&e.target.getAttribute('href').startsWith('#')){e.preventDefault();navigateTo(e.target.getAttribute('href').substring(1))}})<\/script>${extraScript}</body></html>`;
-            
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(new Blob([html], {type: 'text/html'}));
-            a.download = 'project_export.html'; a.click();
-        }
+        // শুরুতে চ্যানেলগুলো লোড করা
+        renderChannels();
     </script>
 </body>
 </html>
